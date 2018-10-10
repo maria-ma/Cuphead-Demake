@@ -17,26 +17,25 @@ end
 start
 		org $1234
 	
-		jsr $e544   ; clear the screen	
-		lda	#$00	; load a 0 
+		;jsr $e544   ; clear the screen	
+readJS	lda	#$00	; load a 0 
 		sta	$9113	; set the DDR for i/o port a for input
-		
-		
-		
-readJS	lda	#$7f	; load 0111 1111 (127)
+				
+		;lda	#$7f	; load 0111 1111 (127)
 		sta $9122	; set one bit for input and rest for output in DDR port b
 		
 		lda	$9120	; load output register b (right button)
-		and	#$80	; and with 128 (get first bit)
+		eor	#$7f	; and with 128 (get first bit)
 		beq	right
+		
 		lda	$9111	; load output register a (up/down/left/fire)
-		and	#$4		; check switch 0 (up)
+		eor	#$fb	; check switch 0 (up)
 		beq up
 		lda $9111
-		and #$8		; check switch 1 (down)
+		eor #$f7	; check switch 1 (down)
 		beq	down
 		lda	$9111
-		and	#$10	; check switch 2 (left) 
+		eor	#$ef	; check switch 2 (left) 
 		beq left
 		bne readJS
 		
