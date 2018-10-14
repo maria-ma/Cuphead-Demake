@@ -33,15 +33,11 @@ code
     lda #$a0    ; enable timer interrupt
     sta $911e
 
-    ; set timer
+    ; set timer 2
     lda #$ff     ; 2s 
     sta $9119
     lda #$ff     ; 2s 
     sta $9118    
-    
-    ;jsr timer
-    ;jsr timer
-    ;jsr timer
 
 wait
     jmp wait
@@ -57,18 +53,19 @@ timer_isr
     ;beq timer_isr
     
     lda #$53        ;heart symbol
-    jsr $ffd2		; display heart
+    ;jsr $ffd2		; display heart
     
-    ; set timer
-    lda #$ff     ; 2s 
+    sta $1fcd
+    
+    lda #$04     ; purple
+    sta $97cd
+    
+    ; set timer; 65535 ms
+    lda #$ff     
     sta $9119
-    lda #$ff     ; 2s 
+    lda #$ff      
     sta $9118   
     
-    ;sta $1fcd
-    
-    ;lda #$04     ; purple
-    ;sta $97cd
 
     pla
     
