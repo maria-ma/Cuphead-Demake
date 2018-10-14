@@ -1,4 +1,4 @@
-# CupheadDemake
+## CupheadDemake Test Programs
 
 backgroundTest.asm: displays black background with white text\
 dpadtest.asm: prints u,r,l,d for direction movement and changes border color\
