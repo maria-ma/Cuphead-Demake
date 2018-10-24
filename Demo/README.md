@@ -1,4 +1,4 @@
 ## CupheadDemake demo
 
-reset settings  
+reset your settings if not working
 WASD to move
