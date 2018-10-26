@@ -1,6 +1,9 @@
 ; draw basic playfield
 ; testing drawing something meaniningful with VIC Characters
 SPACECOLOFF EQU $7800  ; difference between location in space and it's color location
+CUPYOFFSET EQU #8076
+
+; Could have equates for colors
 
     ; target processor, tells dasm which processor we want
 	processor 6502
@@ -27,14 +30,14 @@ main
 
     jsr playfield
 
-    ; store box at starting position 8054
+    ; store box at starting position 8076
     lda #81               
-    sta 8054
+    sta 8076
         
         ; start at position 0,0
          ldx #0
-         stx $0                                 
-         stx $1
+         stx $0     ; x coord                            
+         stx $1     ; y coord
     
 loop    jsr wait
         lda 197
@@ -96,8 +99,19 @@ down    ldx $1      ;
         beq endloop
         ; stx $1    ;commented out so don't move down
         jmp endloop 
-        
+
+;;;;;;;;;;;;;;;;;;;
+;SHOOT SUBROUTINE ;
+; args: none      ;
+; returns: nothing;
+;;;;;;;;;;;;;;;;;;;
 shoot       
+    pha     ; save registers
+    txa
+    pha 
+    tya 
+    pha
+    
     ; PLAY SHOOT SOUND EFFECT
     lda #$0f	; vol 15
 	sta $900e	; store in vol mem (36878)
@@ -122,21 +136,79 @@ shoottimer   ; make the notes last a little longer
     txa    
     
     ;DRAW BULLET
-    ldx $0
-    ldy $1
+    ldx $0 ; load y coordinate
+    txa
+    clc
+    adc $1 ; increment to next
+    ;adc CUPYOFFSET ; add offset
+    tax
+    lda #45
+    sta CUPYOFFSET+1,X
+
+bulletloop    
+    inx   ; reg X = y location of player without screen offset
+    txa
+    sbc #11
+    beq shootend
+    txa 
+    sbc #12   ; past boss
+    bpl shootend
+    jsr wait2      ; pause for a bit
+    jsr wait2
+    jsr wait2
+    jsr wait2
+    jsr wait2
+    jsr wait2 
+    jsr wait2      ; pause for a bit
+    jsr wait2
+    jsr wait2
+    jsr wait2
+    jsr wait2
+    jsr wait2     
+    lda #96         ;erase previous bullet with space
+    sta CUPYOFFSET,X
+    lda #45         ; add next bullet in line
+    sta CUPYOFFSET+1,X
+    jmp bulletloop
     
-    ;lda 
-    
-    
-    
+shootend
+    pla     ; load registers
+    tay
+    pla
+    tax
+    pla
+
     jmp loop
 
+ 
+;;;;;;;;;;;;;;;;;;;;;;
+; CUPHEAD SUBROUTINE ;
+;;;;;;;;;;;;;;;;;;;;;;
 cuphead
+    pha
+    txa
+    pha 
+
     ldx #81        ; cuphead
-    stx 8054  
+    stx 8076
+    
+    pla
+    tax
+    pla
+    
     rts
 
-draw    ldx $1
+;;;;;;;;;;;;;;;;;;
+; DRAW SUBROUTINE;
+;;;;;;;;;;;;;;;;;;    
+draw    
+        pha     ; save registers
+        txa
+        pha 
+        tya 
+        pha
+
+        ldx $1
         ldy #0
         txa 
         cmp #$B
@@ -167,12 +239,19 @@ doneX   ldx $1
         cmp #$B
         bcs draw2
         jmp draw1
-enddraw rts
+enddraw 
+        pla     ; load registers
+        tay
+        pla
+        tax
+        pla
+        
+        rts
 
 
 draw1   jsr clear
         lda #81
-        sta 8054,Y
+        sta 8076,Y
         jmp enddraw
         
 draw2   jsr clear
@@ -180,7 +259,14 @@ draw2   jsr clear
         sta 7966,Y
         jmp enddraw
 
-wait    ldy #$16                            
+wait    
+        pha     ; save registers
+        txa
+        pha 
+        tya 
+        pha
+
+        ldy #$16                            
 reset   ldx #$FF
 waitloop    dex
         cpx #$0
@@ -188,6 +274,13 @@ waitloop    dex
         dey
         cpy #$0
         bne reset
+        
+        pla     ; load registers
+        tay
+        pla
+        tax
+        pla
+        
         rts 
 
 
@@ -195,6 +288,8 @@ clear   lda #$93
         jsr $ffd2                          
 
 playfield
+    pha             ; Save Acc
+
     ;lda #$a2        ; Floor
     lda #102
     sta $1fa2
@@ -353,4 +448,34 @@ playfield
     lda #0
     sta $1f42+SPACECOLOFF 
     sta $1f45+SPACECOLOFF 
+    
+    pla     ; reload acc
+    
+    rts
+
+;;;;;;;;;;;;;;;;;;;
+; WAIT2 SUBROUTINE;
+;;;;;;;;;;;;;;;;;;;
+wait2 
+    pha     ; save registers
+    txa
+    pha 
+    tya 
+    pha
+    
+    ldx #$ff
+ 
+wait2loop   
+    dex
+    beq wait2end   ; return now that loop is done
+    jmp wait2loop 
+    
+    
+wait2end
+    pla     ; load registers
+    tay
+    pla
+    tax
+    pla
+
     rts
