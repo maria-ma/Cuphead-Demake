@@ -53,10 +53,7 @@ loop    jsr wait
         
         
         ; check if pressed shoot button
-        lda #$00	
-        sta $9113
-        lda $9111
-        eor #$df 	
+        cmp #32                                 ; space		
         beq shoot
         jmp loop
 
