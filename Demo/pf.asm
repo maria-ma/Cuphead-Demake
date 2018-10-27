@@ -29,6 +29,7 @@ main
     sta $900f
 
     jsr playfield
+    jsr redpath
 
     ; store box at starting position 8076
     lda #81               
@@ -40,7 +41,7 @@ main
          stx $1     ; y coord
     
 loop    jsr wait
-        lda 197
+        lda 197                                 ; current key pressed
         cmp #9                                  ; w
         beq up                                  ; up
         cmp #17                                 ; a
@@ -49,6 +50,7 @@ loop    jsr wait
         beq down                                ; down
         cmp #18                                 ; d
         beq right                               ; right
+        
         
         ; check if pressed shoot button
         lda #$00	
@@ -59,7 +61,12 @@ loop    jsr wait
         jmp loop
 
 endloop 
-        jsr playfield
+        ;jsr playfield
+        ldx $0
+        lda #96
+        sta CUPYOFFSET-1,X   
+        sta CUPYOFFSET+1,X          
+        
         jsr draw
         jmp loop
         
@@ -86,7 +93,7 @@ left    ldx $0
 right   ldx $0
         inx                     ; move right
         txa
-        cmp #$16
+        cmp #$e
         beq endloop
         stx $0
         jmp endloop
@@ -144,14 +151,16 @@ shoottimer   ; make the notes last a little longer
     tax
     lda #45
     sta CUPYOFFSET+1,X
+    ;lda #2  ;make bullet red
+    ;sta SPACECOLOFF+CUPYOFFSET+1,X
 
 bulletloop    
-    inx   ; reg X = y location of player without screen offset
+    inx            ; reg X = y location of player without screen offset
     txa
-    sbc #11
+    sbc #13
     beq shootend
     txa 
-    sbc #12   ; past boss
+    sbc #14        ; past boss
     bpl shootend
     jsr wait2      ; pause for a bit
     jsr wait2
@@ -169,9 +178,27 @@ bulletloop
     sta CUPYOFFSET,X
     lda #45         ; add next bullet in line
     sta CUPYOFFSET+1,X
+    ;lda #2  ;make bullet red
+    ;sta SPACECOLOFF+CUPYOFFSET+1,X
     jmp bulletloop
     
 shootend
+    jsr wait2      ; pause for a bit
+    jsr wait2
+    jsr wait2
+    jsr wait2
+    jsr wait2
+    jsr wait2 
+    jsr wait2      ; pause for a bit
+    jsr wait2
+    jsr wait2
+    jsr wait2
+    jsr wait2
+    jsr wait2 
+
+    lda #96         ;erase last bullet
+    sta $1f9a
+
     pla     ; load registers
     tay
     pla
@@ -249,12 +276,12 @@ enddraw
         rts
 
 
-draw1   jsr clear
+draw1   ;jsr clear
         lda #81
         sta 8076,Y
         jmp enddraw
         
-draw2   jsr clear
+draw2   ;jsr clear
         lda #$81
         sta 7966,Y
         jmp enddraw
@@ -287,67 +314,27 @@ waitloop    dex
 clear   lda #$93                            
         jsr $ffd2                          
 
+;;;;;;;;;;;;;;;;;;;;;;;;
+; PLAYFIELD SUBROUTINE ;
+; Args: None           ;
+; Returns: Nothing     ;
+;;;;;;;;;;;;;;;;;;;;;;;;            
 playfield
-    pha             ; Save Acc
+    pha             ; Save Acc and x
+    txa
+    pha
+    
+    ldx #0
+    jsr printfloor
+    ldx #22
+    jsr printfloor
+    ldx #44
+    jsr printfloor
+    ldx #66
+    jsr printfloor
 
-    ;lda #$a2        ; Floor
-    lda #102
-    sta $1fa2
-    sta $1fa3
-    sta $1fa4
-    sta $1fa5
-    sta $1fa6
-    
-    sta $1fa7
-    sta $1fa8
-    sta $1fa9
-    sta $1faa
-    sta $1fab
-    
-    sta $1fac
-    sta $1fad
-    sta $1fae
-    sta $1faf
-    sta $1fb0
-    
-    sta $1fb1
-    sta $1fb2
-    sta $1fb3
-    sta $1fb4
-    sta $1fb5
-    
-    sta $1fb6
-    sta $1fb7
-    
-    ;color floor
-    lda #5
-    sta $97a2
-    sta $97a3
-    sta $97a4
-    sta $97a5
-    sta $97a6
-    
-    sta $97a7
-    sta $97a8
-    sta $97a9
-    sta $97aa
-    sta $97ab
-    
-    sta $97ac
-    sta $97ad
-    sta $97ae
-    sta $97af
-    sta $97b0
-    
-    sta $97b1
-    sta $97b2
-    sta $97b3
-    sta $97b4
-    sta $97b5
-    
-    sta $97b6
-    sta $97b7
-
+     
+printlives
     ; lives
     ; char
     lda #83        
@@ -361,98 +348,197 @@ playfield
     sta $1e19+SPACECOLOFF
     
     
-    
     ;boss
     ;corners
     lda #122    ;bottom right
-    sta $1f9e
+    sta $1fa0
     lda #6
-    sta $1f9e+SPACECOLOFF
+    sta $1fa0+SPACECOLOFF
     
     lda #76     ;bottom left
-    sta $1f99
+    sta $1f9b
     lda #6
-    sta $1f99+SPACECOLOFF
+    sta $1f9b+SPACECOLOFF
     
     lda #79     ;upper left
-    sta $1f15
+    sta $1f17
     lda #6
-    sta $1f15+SPACECOLOFF
+    sta $1f17+SPACECOLOFF
     
     lda #80     ;upper right
-    sta $1f1a
+    sta $1f1c
     lda #6
-    sta $1f1a+SPACECOLOFF
+    sta $1f1c+SPACECOLOFF
       
     ;bottom
     lda #100
-    sta $1f9a
-    sta $1f9b
     sta $1f9c
     sta $1f9d
+    sta $1f9e
+    sta $1f9f
     ;color
     lda #6
-    sta $1f9a+SPACECOLOFF
-    sta $1f9b+SPACECOLOFF
     sta $1f9c+SPACECOLOFF
     sta $1f9d+SPACECOLOFF
+    sta $1f9e+SPACECOLOFF
+    sta $1f9f+SPACECOLOFF
     
     ;top
     lda #99
-    sta $1f16
-    sta $1f17
     sta $1f18
     sta $1f19
+    sta $1f1a
+    sta $1f1b
     ;color
     lda #6
-    sta $1f16+SPACECOLOFF
-    sta $1f17+SPACECOLOFF
     sta $1f18+SPACECOLOFF
     sta $1f19+SPACECOLOFF
+    sta $1f1a+SPACECOLOFF
+    sta $1f1b+SPACECOLOFF
     
     ;left
     lda #101
-    sta $1f83
-    sta $1f6d
-    sta $1f57
-    sta $1f41
-    sta $1f2b
+    sta $1f85
+    sta $1f6f
+    sta $1f59
+    sta $1f43
+    sta $1f2d
     ;color
     lda #6
-    sta $1f83+SPACECOLOFF
-    sta $1f6d+SPACECOLOFF
-    sta $1f57+SPACECOLOFF
-    sta $1f41+SPACECOLOFF
-    sta $1f2b+SPACECOLOFF
+    sta $1f85+SPACECOLOFF
+    sta $1f6f+SPACECOLOFF
+    sta $1f59+SPACECOLOFF
+    sta $1f43+SPACECOLOFF
+    sta $1f2d+SPACECOLOFF
     
     ;lda #81
     lda #103
-    sta $1f88
-    sta $1f72
-    sta $1f5c
-    sta $1f46
-    sta $1f30
+    sta $1f8a
+    sta $1f74
+    sta $1f5e
+    sta $1f48
+    sta $1f32
     ;color
     lda #6
-    sta $1f88+SPACECOLOFF
-    sta $1f72+SPACECOLOFF
-    sta $1f5c+SPACECOLOFF
-    sta $1f46+SPACECOLOFF
-    sta $1f30+SPACECOLOFF   
+    sta $1f8a+SPACECOLOFF
+    sta $1f74+SPACECOLOFF
+    sta $1f5e+SPACECOLOFF
+    sta $1f48+SPACECOLOFF
+    sta $1f32+SPACECOLOFF   
     
     ;eyes
     lda #81
-    sta $1f42
-    sta $1f45
+    sta $1f44
+    sta $1f47
     ; color
     lda #0
-    sta $1f42+SPACECOLOFF 
-    sta $1f45+SPACECOLOFF 
+    sta $1f44+SPACECOLOFF 
+    sta $1f47+SPACECOLOFF 
     
-    pla     ; reload acc
+    pla     ; reload x and acc
+    tax
+    pla
     
     rts
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; PRINTFLOOR SUBROUTINE                     ;
+; Arg: level of floor to printfloor; in X   ;
+; returns: nothing                          ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+printfloor
+    pha
+    txa
+    pha
+
+    ;lda #$a2        ; Floor
+    lda #102
+    sta $1fa2,X
+    sta $1fa3,X
+    sta $1fa4,X
+    sta $1fa5,X
+    sta $1fa6,X
+    
+    sta $1fa7,X
+    sta $1fa8,X
+    sta $1fa9,X
+    sta $1faa,X
+    sta $1fab,X
+    
+    sta $1fac,X
+    sta $1fad,X
+    sta $1fae,X
+    sta $1faf,X
+    sta $1fb0,X
+    
+    sta $1fb1,X
+    sta $1fb2,X
+    sta $1fb3,X
+    sta $1fb4,X
+    sta $1fb5,X
+    
+    sta $1fb6,X
+    sta $1fb7,X
+    
+    ;color floor
+    lda #5
+    sta $97a2,X
+    sta $97a3,X
+    sta $97a4,X
+    sta $97a5,X
+    sta $97a6,X
+    
+    sta $97a7,X
+    sta $97a8,X
+    sta $97a9,X
+    sta $97aa,X
+    sta $97ab,X
+    
+    sta $97ac,X
+    sta $97ad,X
+    sta $97ae,X
+    sta $97af,X
+    sta $97b0,X
+    
+    sta $97b1,X
+    sta $97b2,X
+    sta $97b3,X
+    sta $97b4,X
+    sta $97b5,X
+    
+    sta $97b6,X
+    sta $97b7,X
+
+    pla
+    tax
+    pla
+    
+    rts    
+    
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; RED PATH                                           ;
+; makes it so cuphead and the bullets are always red ;    
+; Arg: none                                          ;
+; Returns: Nothing                                   ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+redpath
+    pha
+    txa 
+    pha
+
+    ldx #14
+    lda #2   ; red
+redpathloop
+    sta $1f8c+SPACECOLOFF,X
+    dex
+    bpl redpathloop
+    
+    pla
+    tax
+    pla
+    
+    rts
+    
 ;;;;;;;;;;;;;;;;;;;
 ; WAIT2 SUBROUTINE;
 ;;;;;;;;;;;;;;;;;;;
