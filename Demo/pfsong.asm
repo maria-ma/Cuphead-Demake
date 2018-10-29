@@ -20,12 +20,11 @@ HEADSTART EQU 7881
     
     ; the basic stub to run the assembly code
 	    dc.w    end
-    	dc.w    1234
-    	dc.b    $9e, "4660", 0 ; 1234 in hex base 10 = 4660
+    	dc.w    1010 ; from looking at memory, try memory location $1010
+    	dc.b    $9e, "4112", 0 ; 1010 in hex base 10 = 4112
 end
     dc.w    0    ; program stub
 
-    org $1234
    
 main 
     jsr clear        ; clear screen
