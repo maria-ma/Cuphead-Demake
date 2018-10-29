@@ -1,7 +1,7 @@
 ; draw basic playfield
 ; testing drawing something meaniningful with VIC Characters
 SPACECOLOFF EQU $7800  ; difference between location in space and it's color location
-CUPYOFFSET EQU #8076
+CUPYOFFSET EQU 8076
 ROWDIFF EQU 22
 
 ; For drawing start screen
@@ -10,7 +10,6 @@ CUPSTART EQU 7751
 HEADSTART EQU 7881
 
 ; Boss Timer 2 Info - Do not use for anything else!
-
 TIMERCOUNT1 EQU 7167
 TIMERCOUNT2 EQU 7166
 
@@ -32,8 +31,8 @@ end
 main 
     jsr clear        ; clear screen
 
-    jsr disstartscreen      ; display start screen   
-	jsr	song		; play the title song
+    ;jsr disstartscreen      ; display start screen   
+	;jsr	song		; play the title song
     
     
     ;lda #8          ; change to black
@@ -169,15 +168,15 @@ shoottimer   ; make the notes last a little longer
     
     ;DRAW BULLET
     ldx $0 ; load y coordinate
-    txa
-    clc
-    adc $1 ; increment to next
+    ;txa
+    ;clc
+    ;adc #0 ; increment to next
     ;adc CUPYOFFSET ; add offset
-    tax
+    ;tax
     lda #45
     sta CUPYOFFSET+1,X
-    ;lda #2  ;make bullet red
-    ;sta SPACECOLOFF+CUPYOFFSET+1,X
+    lda #2  ;make bullet red
+    sta SPACECOLOFF+CUPYOFFSET+1,X
 
 bulletloop    
     inx            ; reg X = y location of player without screen offset
@@ -203,8 +202,8 @@ bulletloop
     sta CUPYOFFSET,X
     lda #45         ; add next bullet in line
     sta CUPYOFFSET+1,X
-    ;lda #2  ;make bullet red
-    ;sta SPACECOLOFF+CUPYOFFSET+1,X
+    lda #2  ;make bullet red
+    sta SPACECOLOFF+CUPYOFFSET+1,X
     jmp bulletloop
     
 shootend
@@ -304,21 +303,31 @@ enddraw
 draw1   ;jsr clear
         lda #81
         sta 8076,Y
+        
+        ; add color
+        lda #2
+        sta 8076+SPACECOLOFF,Y
+        
         jmp enddraw
         
 draw2   ;jsr clear
         lda #$81
         sta 7966,Y
+        
+        ; add color
+        lda #2
+        sta 7966+SPACECOLOFF,Y
+        
         jmp enddraw
 
 wait    
         pha     ; save registers
         txa
-        pha 
-        tya 
+        pha
+        tya
         pha
 
-        ldy #$16                            
+        ldy #$16
 reset   ldx #$FF
 waitloop    dex
         cpx #$0
@@ -333,13 +342,13 @@ waitloop    dex
         tax
         pla
         
-        rts 
+        rts
 
 
-clear   
+clear
         pha
-        lda #$93                            
-        jsr $ffd2     
+        lda #$93
+        jsr $ffd2
         pla
 		rts
 
@@ -730,7 +739,7 @@ disstartscreen
 
     jsr clear         ; clear screen    
     
-    lda #120          ; change to yellow with black border
+    lda #40          ; change to yellow with black border
     sta $900f
     
     lda #255          ; change where it gets its characters from
@@ -943,14 +952,14 @@ disstartscreen
     lda #0                              ;--------
     sta 7248
     ;2
-    lda #192                                ; **------
+    lda #192                                ;**------
     sta 7249
     ;3,4
     lda #224                                ;***-----
     sta 7250
     sta 7251
     ;5,6,7,8
-    lda #0                              ;--------
+    lda #0                                  ;--------
     sta 7252
     sta 7253
     sta 7254
@@ -1230,8 +1239,8 @@ bscend
 boss_shoot
     pha     ; save registers
     txa
-    pha 
-    tya 
+    pha
+    tya
     pha
     
     ; PLAY SHOOT SOUND EFFECT
@@ -1242,9 +1251,10 @@ boss_shoot
     sta 7165  ; store at mem loc 7165; used for comparison later
     ; put 254 in x
     ldx #$fe
+    
 bossshootloop
     stx $900a  ; put in third speaker
-    ldy    #$ff   ; make note last longer
+    ldy #$ff   ; make note last longer
 bossshoottimer   ; make the notes last a little longer
     dey
     bne bossshoottimer
@@ -1255,63 +1265,77 @@ bossshoottimer   ; make the notes last a little longer
     sbc 7165   ; check if at 128
     bne bossshootloop
     inx
-    txa    
+    txa
     
-    ; sample bullet draw
+    
+    
+    ;pla     ; load registers
+    ;tay
+    ;pla
+    ;tax
+    ;pla
+    
+    ;rts
+    
+    ; Draw first bullet
     lda #45
-    sta $1f9a
+    sta CUPYOFFSET+14
     
     lda #6
-    sta $1f9a+SPACECOLOFF
+    sta CUPYOFFSET+14+SPACECOLOFF
     
-    pla     ; load registers
-    tay
-    pla
-    tax
-    pla
+    ;ldy $0      ; get position of player
+    ;pla     ; load registers
+    ;tay
+    ;pla
+    ;tax
+    ;pla
     
-    rts
-    
+    ;rts
     
     ;DRAW BULLET
-    ldx $0 ; load y coordinate
-    txa
-    clc
-    adc $1 ; increment to next
+    ldx #14                ; start position of drawing bullet
+    ;txa
+    ;clc
+    ;adc $1 ; increment to next
     ;adc CUPYOFFSET ; add offset
-    tax
-    lda #45
-    sta CUPYOFFSET+1,X
-    ;lda #2  ;make bullet red
+    ;tax
+    ;lda #45
+    ;sta CUPYOFFSET+1,X
+    ;lda #6  ;make bullet red
     ;sta SPACECOLOFF+CUPYOFFSET+1,X
 
+    ldy $1 ;load in y coordinate
 bossbulletloop    
-    inx            ; reg X = y location of player without screen offset
+    dex            
     txa
-    sbc #13
+    clc
+    sbc #$0,Y    
+    clc
+    adc #1
     beq bossshootend
-    txa 
-    sbc #14        ; past boss
-    bpl bossshootend
+    ;txa
+    ;sbc #14        ; past boss
+    ;bpl bossshootend
     jsr wait2      ; pause for a bit
     jsr wait2
     jsr wait2
     jsr wait2
     jsr wait2
-    jsr wait2 
+    jsr wait2
     jsr wait2      ; pause for a bit
     jsr wait2
     jsr wait2
     jsr wait2
     jsr wait2
-    jsr wait2     
+    jsr wait2
     lda #96         ;erase previous bullet with space
-    sta CUPYOFFSET,X
-    lda #45         ; add next bullet in line
     sta CUPYOFFSET+1,X
-    ;lda #2  ;make bullet red
-    ;sta SPACECOLOFF+CUPYOFFSET+1,X
-    jmp bulletloop
+    lda #45         ; add next bullet in line
+    sta CUPYOFFSET,X
+    lda #6  ;make bullet blue
+    sta SPACECOLOFF+CUPYOFFSET,X
+    jmp bossbulletloop
     
 bossshootend
     jsr wait2      ; pause for a bit
@@ -1328,7 +1352,8 @@ bossshootend
     jsr wait2 
 
     lda #96         ;erase last bullet
-    sta $1f9a
+    ldy $1
+    sta CUPYOFFSET+1,X
 
     pla     ; load registers
     tay
