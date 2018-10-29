@@ -31,8 +31,8 @@ end
 main 
     jsr clear        ; clear screen
 
-    ;jsr disstartscreen      ; display start screen   
-	;jsr	song		; play the title song
+    jsr disstartscreen      ; display start screen   
+	jsr	song		; play the title song
     
     
     ;lda #8          ; change to black
