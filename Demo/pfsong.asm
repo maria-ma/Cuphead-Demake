@@ -2,6 +2,12 @@
 ; testing drawing something meaniningful with VIC Characters
 SPACECOLOFF EQU $7800  ; difference between location in space and it's color location
 CUPYOFFSET EQU #8076
+ROWDIFF EQU 22
+
+; For drawing start screen
+CUPHEADSTART EQU 8064
+CUPSTART EQU 7751
+HEADSTART EQU 7881
 
 ; Could have equates for colors
 
@@ -24,10 +30,21 @@ end
 main 
     jsr clear        ; clear screen
 
+    jsr disstartscreen      ; display start screen   
+	jsr	song		; play the title song
+    
+;lo
+;    jmp lo
+    
     ;lda #8          ; change to black
     lda #184          ; change to light cyan
     sta $900f
-	jsr	song		; play the title song
+    
+    lda #240        ; change back to where it originally got its characters
+    ; or 242
+    sta $9005
+    
+    jsr clear
 
     jsr playfield
     jsr redpath
@@ -309,8 +326,11 @@ waitloop    dex
         rts 
 
 
-clear   lda #$93                            
+clear   
+        pha
+        lda #$93                            
         jsr $ffd2     
+        pla
 		rts
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
@@ -325,11 +345,11 @@ playfield
     
     ldx #0
     jsr printfloor
-    ldx #22
+    ldx #ROWDIFF
     jsr printfloor
-    ldx #44
+    ldx #ROWDIFF*2
     jsr printfloor
-    ldx #66
+    ldx #ROWDIFF*3
     jsr printfloor
 
      
@@ -670,12 +690,452 @@ pause
 	lda	#$0
 	sta	$900c
 	ldy	#$7f	; duration 
+    ;jsr nothing
+    ;jsr nothing
 	jsr	play
 	rts
 ; plays note
 play
-	lda	#$20
-	jsr	$ffd2	; print if right if pressed
+	;lda	#$20
+    ;jsr 
+    jsr nothing
+    ;jsr nothing
+    ;jsr	$ffd2	; print if right if pressed
 	dey
 	bne	play
+
 	rts
+    
+    
+    
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; disstartscreen SUBROUTINE                                    ;
+;--------------------------------------------------------------;
+; Displays the start screen that features cuphead and his name ;
+; Args: none                                                   ;
+; Returns: nothing                                             ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;   
+disstartscreen
+    pha
+
+    jsr clear         ; clear screen    
+    
+    lda #120          ; change to yellow with black border
+    sta $900f
+    
+    lda #255          ; change where it gets its characters from
+    sta $9005
+    
+    ; Char0
+    ;1
+    lda #30          ; ---****-
+    sta 7168
+    ;2
+    lda #255         ; ********
+    sta 7169
+    ;3
+    ;lda #248        ; *********
+    sta 7170
+    ;4
+    lda #231         ; ***--***
+    sta 7171
+    ;5
+    lda #15          ;----****
+    sta 7172
+    ;6
+    lda #127         ; -*******
+    sta 7173
+    ;7
+    lda #255        ; ********
+    sta 7174
+    ;8
+    lda #207             ; **--****
+    sta 7175
+    
+    ; Char1
+    ;1
+    lda #207            ;**--****
+    sta 7176  
+    ;2
+    lda #111             ; -**-****
+    sta 7177
+    ;3
+    lda #127               ; -*******
+    sta 7178
+    ;4
+    lda #31               ; ---*****
+    sta 7179
+    ;5
+    lda #0          ;--------
+    sta 7180
+    ;6
+    lda #7            ; -----***
+    sta 7181
+    ;7
+    lda #15              ; ----****
+    sta 7182
+    ;8
+    lda #29               ; ---***-*
+    sta 7183
+  
+    ; Char 2
+    ;1
+    lda #25             ; ---**--*
+    sta 7184
+    ;2
+    lda #31                 ; ---*****
+    sta 7185
+    ;3
+    lda #15               ; ----****
+    sta 7186
+    ;4
+    ;lda                     ; ----****
+    sta 7187
+    ;5
+    lda #3            ; ------**
+    sta 7188
+    ;6
+    lda #1             ;-------*
+    sta 7189
+    ;7
+    ;lda #1             ;-------*
+    sta 7190
+    ;8
+    lda #0              ;--------
+    sta 7191   
+
+    ; Char3
+    ;1
+    lda #0              ;--------
+    sta 7192
+    ;2
+    lda #6                 ; -----**-
+    sta 7193
+    ;3
+    lda #15                     ; ----****
+    sta 7194
+    ;4
+    ;lda #15                     ; ----****
+    sta 7195
+    ;5,6,7,8
+    lda #0
+    sta 7196
+    sta 7197
+    sta 7198
+    sta 7199
+    
+    ; Char4
+    ;1,2,3,4
+    lda #0                  ; --------
+    sta 7200
+    sta 7201
+    sta 7202
+    sta 7203
+    ;5,6,7,8
+    lda #255                ; *******
+    sta 7204
+    sta 7205
+    sta 7206
+    sta 7207
+    
+    ; Char5
+    ;1,2,3
+    lda #255                ; *******
+    sta 7208
+    sta 7209
+    sta 7210
+    ;4
+    lda #254                       ; *******-
+    sta 7211
+    ;5
+    lda #252                   ; ******--
+    sta 7212
+    ;6,7
+    lda #255                    ; *******
+    sta 7213
+    sta 7214
+    ;8
+    lda #254                    ; *******-
+    sta 7215
+    
+    ; Char6
+    ;1,2
+    lda #254             ; *******-
+    sta 7216
+    sta 7217 
+    ;3,4,5
+    lda #255            ; ********
+    sta 7218
+    sta 7219
+    sta 7220
+    ;6,7
+    lda #239               ; ***-****
+    sta 7221
+    sta 7222
+    ;8
+    lda #198                     ; **---**-
+    sta 7223
+    
+    ; Char7
+    ;1,2
+    lda #198                     ; **---**-
+    sta 7224
+    sta 7225
+    ;3,4
+    lda #199                    ; **---***
+    sta 7226
+    sta 7227
+    ;5,6,7,8
+    lda #0                      ;--------
+    sta 7228
+    sta 7229
+    sta 7230
+    sta 7231
+    
+    ; Char8
+    ;1,2,3,4
+    lda #0                      ;--------
+    sta 7232
+    sta 7233
+    sta 7234
+    sta 7235
+    ;5,6,7,8
+    lda #192                         ;**------
+    sta 7236
+    sta 7237
+    sta 7238
+    sta 7239
+    
+    ; Char9
+    ;1
+    lda #192                         ;**------
+    sta 7240
+    ;2
+    lda #128                        ; *-------
+    sta 7241
+    ;3,4
+    lda #8                            ;----*---
+    sta 7242
+    sta 7243
+    ;5
+    lda #28                        ; ---***--
+    sta 7244
+    ;6,7
+    lda #252                           ; ******--
+    sta 7245
+    sta 7246
+    ;8 
+    lda #0                              ;--------
+    sta 7247
+    
+    ; Char10
+    ;1
+    lda #0                              ;--------
+    sta 7248
+    ;2
+    lda #192                                ; **------
+    sta 7249
+    ;3,4
+    lda #224                                ;***-----
+    sta 7250
+    sta 7251
+    ;5,6,7,8
+    lda #0                              ;--------
+    sta 7252
+    sta 7253
+    sta 7254
+    sta 7255
+        
+    ; Char 11 - Block
+    ;1,8
+    lda #255
+    sta 7256
+    sta 7257
+    sta 7258
+    sta 7259
+    
+    sta 7260
+    sta 7261
+    sta 7262
+    sta 7263
+    
+    ; Char 12 - space
+    
+    ; Display Cuphead Figure
+    lda #0
+    sta CUPHEADSTART
+    
+    lda #1
+    sta CUPHEADSTART+ROWDIFF
+    
+    lda #2
+    sta CUPHEADSTART+2*ROWDIFF
+    
+    lda #3
+    sta CUPHEADSTART+3*ROWDIFF
+    
+    lda #4
+    sta CUPHEADSTART+1
+    
+    lda #5
+    sta CUPHEADSTART+1+ROWDIFF
+    
+    lda #6
+    sta CUPHEADSTART+1+2*ROWDIFF
+    
+    lda #7
+    sta CUPHEADSTART+1+3*ROWDIFF
+    
+    lda #8
+    sta CUPHEADSTART+2
+    
+    lda #9
+    sta CUPHEADSTART+2+ROWDIFF
+    
+    lda #10
+    sta CUPHEADSTART+2+3*ROWDIFF
+
+    ; Display Cuphead Word
+    
+    lda #11
+    
+    ; C
+    sta CUPSTART
+    sta CUPSTART+1
+    sta CUPSTART+2
+    
+    sta CUPSTART+ROWDIFF
+    sta CUPSTART+2*ROWDIFF
+    sta CUPSTART+3*ROWDIFF
+    
+    sta CUPSTART+4*ROWDIFF
+    sta CUPSTART+4*ROWDIFF+1
+    sta CUPSTART+4*ROWDIFF+2
+    
+    ; U
+    sta CUPSTART+4
+    sta CUPSTART+6
+    
+    sta CUPSTART+4+ROWDIFF
+    sta CUPSTART+6+ROWDIFF
+    
+    sta CUPSTART+4+2*ROWDIFF
+    sta CUPSTART+6+2*ROWDIFF 
+    
+    sta CUPSTART+4+3*ROWDIFF
+    sta CUPSTART+6+3*ROWDIFF 
+    
+    sta CUPSTART+4+4*ROWDIFF
+    sta CUPSTART+5+4*ROWDIFF
+    sta CUPSTART+6+4*ROWDIFF 
+    
+    ; P
+    sta CUPSTART+8
+    sta CUPSTART+9
+    sta CUPSTART+10
+    
+    sta CUPSTART+8+ROWDIFF
+    sta CUPSTART+10+ROWDIFF
+    
+    sta CUPSTART+8+2*ROWDIFF
+    sta CUPSTART+9+2*ROWDIFF
+    sta CUPSTART+10+2*ROWDIFF
+    
+    sta CUPSTART+8+3*ROWDIFF
+    
+    sta CUPSTART+8+4*ROWDIFF
+    
+    ; H
+    sta HEADSTART
+    sta HEADSTART+2
+    
+    sta HEADSTART+ROWDIFF
+    sta HEADSTART+ROWDIFF+2
+    
+    sta HEADSTART+2*ROWDIFF
+    sta HEADSTART+2*ROWDIFF+1
+    sta HEADSTART+2*ROWDIFF+2
+    
+    sta HEADSTART+3*ROWDIFF
+    sta HEADSTART+3*ROWDIFF+2
+    
+    sta HEADSTART+4*ROWDIFF
+    sta HEADSTART+4*ROWDIFF+2
+    
+    ;E
+    sta HEADSTART+4
+    sta HEADSTART+5
+    sta HEADSTART+6
+    
+    sta HEADSTART+4+ROWDIFF
+    
+    sta HEADSTART+4+2*ROWDIFF
+    sta HEADSTART+4+2*ROWDIFF+1
+    sta HEADSTART+4+2*ROWDIFF+2
+    
+    sta HEADSTART+4+3*ROWDIFF
+    
+    sta HEADSTART+4+4*ROWDIFF
+    sta HEADSTART+4+4*ROWDIFF+1
+    sta HEADSTART+4+4*ROWDIFF+2
+    
+    ; A
+    sta HEADSTART+8
+    sta HEADSTART+9
+    sta HEADSTART+10
+    
+    sta HEADSTART+8+ROWDIFF
+    sta HEADSTART+8+ROWDIFF+2
+    
+    sta HEADSTART+8+2*ROWDIFF
+    sta HEADSTART+8+2*ROWDIFF+1
+    sta HEADSTART+8+2*ROWDIFF+2
+    
+    sta HEADSTART+8+3*ROWDIFF
+    sta HEADSTART+8+3*ROWDIFF+2
+    
+    sta HEADSTART+8+4*ROWDIFF
+    sta HEADSTART+8+4*ROWDIFF+2
+    
+    ;D
+    sta HEADSTART+12
+    sta HEADSTART+13
+    
+    sta HEADSTART+12+ROWDIFF
+    sta HEADSTART+12+ROWDIFF+2
+    
+    sta HEADSTART+12+2*ROWDIFF
+    sta HEADSTART+12+2*ROWDIFF+2
+    
+    sta HEADSTART+12+3*ROWDIFF
+    sta HEADSTART+12+3*ROWDIFF+2
+    
+    sta HEADSTART+12+4*ROWDIFF
+    sta HEADSTART+12+4*ROWDIFF+1
+    
+    pla
+    
+    rts
+
+;;Time waster    
+nothing
+    pha
+    txa
+    pha
+
+    ldx #$99
+nothingloop   
+    dex
+    bne nothingloop
+    
+    ldx #$87
+nothingloop2    
+    dex
+    bne nothingloop2
+
+nothingend    
+    pla
+    tax
+    pla
+    rts
+    
