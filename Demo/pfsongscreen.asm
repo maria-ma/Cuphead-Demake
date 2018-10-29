@@ -34,7 +34,6 @@ main
     jsr disstartscreen      ; display start screen   
 	jsr	song		; play the title song
     
-    
     ;lda #8          ; change to black
     lda #184          ; change to light cyan
     sta $900f
@@ -937,7 +936,7 @@ disstartscreen
     sta 7242
     sta 7243
     ;5
-    lda #28                        ; ---***--
+    lda #31                        ; ---*****
     sta 7244
     ;6,7
     lda #252                           ; ******--
