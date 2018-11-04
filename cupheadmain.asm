@@ -33,7 +33,7 @@ main
     jsr clear        ; clear screen
 
     jsr disstartscreen      ; display start screen   
-	jsr	song		; play the title song
+	;jsr	song		; play the title song
     
     jsr disoptions   ; display the game's options for selection  
 
@@ -50,7 +50,6 @@ optionchoiceloop
 
     cmp #32                                 ; space		
     beq select
-    ;jmp loop
 
     jmp optionchoiceloop
     
@@ -116,17 +115,33 @@ lo1 ; Otherwise, at Instructions
     
 select
     ; Just play for now; no other options
+    ; Clear keyboard buffer?
+    jsr wait
+    jsr wait
     
-    jsr wait
-    jsr wait
+    jsr clear
+    
+    jsr chcharset
+    
+    ; Print Spaces Everywhere
+    lda #5
+    
+    ldx #255
+printspacescup
+    sta 7679,X
+    dex
+    bne printspacescup
+    
+    ldx #251
+printspacescup2
+    sta 7934,X
+    dex
+    bne printspacescup2    
     
     ;lda #8           ; change to black
     lda #184          ; change to light cyan
     sta $900f
-    
-    lda #240        ; change back to where it originally got its characters
-    sta $9005
-    
+        
     ; set up for boss check
     lda #$99
     sta TIMERCOUNT1   
@@ -140,7 +155,7 @@ select
     jsr redpath
    
     ; store box at starting position 8076
-    lda #81               
+    lda #6              
     sta 8076
         
         ; start at position 0,0
@@ -172,7 +187,7 @@ loop    ; Check if boss shoots
 endloop 
         ;jsr playfield
         ldx $0
-        lda #96
+        lda #5
         sta CUPYOFFSET-1,X   
         sta CUPYOFFSET+1,X          
         
@@ -253,12 +268,7 @@ shoottimer   ; make the notes last a little longer
     
     ;DRAW BULLET
     ldx $0 ; load y coordinate
-    ;txa
-    ;clc
-    ;adc #0 ; increment to next
-    ;adc CUPYOFFSET ; add offset
-    ;tax
-    lda #45
+    lda #3
     sta CUPYOFFSET+1,X
     lda #2  ;make bullet red
     sta SPACECOLOFF+CUPYOFFSET+1,X
@@ -283,9 +293,9 @@ bulletloop
     jsr wait2
     jsr wait2
     jsr wait2     
-    lda #96         ;erase previous bullet with space
+    lda #5         ;erase previous bullet with space
     sta CUPYOFFSET,X
-    lda #45         ; add next bullet in line
+    lda #3         ; add next bullet in line
     sta CUPYOFFSET+1,X
     lda #2  ;make bullet red
     sta SPACECOLOFF+CUPYOFFSET+1,X
@@ -305,7 +315,7 @@ shootend
     jsr wait2
     jsr wait2 
 
-    lda #96         ;erase last bullet
+    lda #5         ;erase last bullet
     sta $1f9a
 
     pla     ; load registers
@@ -325,7 +335,7 @@ cuphead
     txa
     pha 
 
-    ldx #81        ; cuphead
+    ldx #6        ; cuphead
     stx 8076
     
     pla
@@ -386,7 +396,7 @@ enddraw
 
 
 draw1   ;jsr clear
-        lda #81
+        lda #6
         sta 8076,Y
         
         ; add color
@@ -396,7 +406,7 @@ draw1   ;jsr clear
         jmp enddraw
         
 draw2   ;jsr clear
-        lda #$81
+        lda #$6
         sta 7966,Y
         
         ; add color
@@ -447,20 +457,35 @@ playfield
     txa
     pha
     
-    ldx #0
-    jsr printfloor
+    ; Print Lower part of grass
     ldx #ROWDIFF
     jsr printfloor
     ldx #ROWDIFF*2
     jsr printfloor
     ldx #ROWDIFF*3
     jsr printfloor
-
+    
+    ; Print upper grass level
+    ldx #0
+    
+floorloop
+    cpx #22
+    beq printlives
+    
+    ; Char
+    lda #2
+    sta $1fa2,X
+    ;Color
+    lda #5
+    sta $97a2,X
+    
+    inx
+    jmp floorloop
      
 printlives
     ; lives
     ; char
-    lda #83        
+    lda #0        
     sta $1e17    
     sta $1e18
     sta $1e19
@@ -470,6 +495,15 @@ printlives
     sta $1e18+SPACECOLOFF
     sta $1e19+SPACECOLOFF
     
+    ; Print some Platforms
+    ;lda #4
+    ;sta $1fa2-3*ROWDIFF+3
+    ;sta $1fa2-3*ROWDIFF+9
+    ;sta $1fa2-5*ROWDIFF+5
+    ;lda #1 ;white
+    ;sta $1fa2-3*ROWDIFF+3+SPACECOLOFF
+    ;sta $1fa2-3*ROWDIFF+9+SPACECOLOFF
+    ;sta $1fa2-5*ROWDIFF+5+SPACECOLOFF
     
     ;boss
     ;corners
@@ -573,9 +607,10 @@ printfloor
     pha
     txa
     pha
-
+    
     ;lda #$a2        ; Floor
-    lda #102
+    lda #1
+    
     sta $1fa2,X
     sta $1fa3,X
     sta $1fa4,X
@@ -1688,7 +1723,121 @@ disoptions
     
     rts
     
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Change Cuphead Character Set  ;
+;-------------------------------;
+; 0=Heart                       ;
+; 1=Block                       ;
+; 2=Grass Top                   ;
+; 3=Bullet                      ;
+; 4=Platform                    ;
+; 5=Space                       ;
+; 6&7=Cuphead Sprite            ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+chcharset
+    pha
+    txa
+    pha
     
+    ; Char0 = Heart
+    lda #0
+    sta 7168
+    lda #$36
+    sta 7169
+    lda #$7f
+    sta 7170
+    sta 7171
+    sta 7172
+    lda #$3e
+    sta 7173
+    lda #$1c
+    sta 7174
+    lda #$8
+    sta 7175
+    
+    ; Char1 = Block
+    lda #$ff
+    sta 7176
+    sta 7177
+    sta 7178
+    sta 7179
+    sta 7180
+    sta 7181
+    sta 7182
+    sta 7183
+    
+    ; Char2 = Grass Top
+    lda #$aa
+    sta 7184
+    lda #$ff
+    sta 7185
+    sta 7186
+    sta 7187
+    sta 7188
+    sta 7189
+    sta 7190
+    sta 7191
+    
+    ; Char3 = Bullet
+    lda #$0
+    sta 7192
+    sta 7193
+    sta 7194
+    sta 7196
+    sta 7197
+    sta 7198
+    sta 7199
+    lda #$7e
+    sta 7195
+    
+    ; Char4 = Platform
+    lda #$ff
+    sta 7200
+    sta 7201
+    lda #$7e
+    sta 7202
+    lda #$3c
+    sta 7203
+    lda #$0
+    sta 7204
+    sta 7205
+    sta 7206
+    sta 7207
+
+    ; Char5 = Space
+    lda #0
+    sta 7208
+    sta 7209
+    sta 7210
+    sta 7211
+    sta 7212
+    sta 7213
+    sta 7214
+    sta 7215
+    
+    ; Char6=Cuphead
+    lda #$e0
+    sta 7216
+    lda #$7e
+    sta 7217
+    sta 7221
+    lda #$42
+    sta 7218
+    sta 7219
+    lda #$24
+    sta 7220
+    lda #$3c
+    sta 7221
+    lda #$24
+    sta 7222
+        
+    pla
+    tax
+    pla
+    
+    rts
+    
+ 
     
 
 ;;Time waster    
@@ -1794,43 +1943,14 @@ bossshoottimer   ; make the notes last a little longer
     inx
     txa
     
-    
-    
-    ;pla     ; load registers
-    ;tay
-    ;pla
-    ;tax
-    ;pla
-    
-    ;rts
-    
     ; Draw first bullet
-    lda #45
+    lda #3
     sta CUPYOFFSET+14
-    
     lda #6
     sta CUPYOFFSET+14+SPACECOLOFF
     
-    ;ldy $0      ; get position of player
-    ;pla     ; load registers
-    ;tay
-    ;pla
-    ;tax
-    ;pla
-    
-    ;rts
-    
     ;DRAW BULLET
     ldx #14                ; start position of drawing bullet
-    ;txa
-    ;clc
-    ;adc $1 ; increment to next
-    ;adc CUPYOFFSET ; add offset
-    ;tax
-    ;lda #45
-    ;sta CUPYOFFSET+1,X
-    ;lda #6  ;make bullet red
-    ;sta SPACECOLOFF+CUPYOFFSET+1,X
 
     ldy $1 ;load in y coordinate
 bossbulletloop    
@@ -1856,9 +1976,9 @@ bossbulletloop
     jsr wait2
     jsr wait2
     jsr wait2
-    lda #96         ;erase previous bullet with space
+    lda #5         ;erase previous bullet with space
     sta CUPYOFFSET+1,X
-    lda #45         ; add next bullet in line
+    lda #3         ; add next bullet in line
     sta CUPYOFFSET,X
     lda #6  ;make bullet blue
     sta SPACECOLOFF+CUPYOFFSET,X
@@ -1878,7 +1998,7 @@ bossshootend
     jsr wait2
     jsr wait2 
 
-    lda #96         ;erase last bullet
+    lda #5         ;erase last bullet
     ldy $1
     sta CUPYOFFSET+1,X
 
@@ -1889,3 +2009,9 @@ bossshootend
     pla
     
     rts
+    
+    
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Data Section                                              ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;data #$e0, #$7e, #$42, #$42, #$24, #$7e, #$3c, #$24  
