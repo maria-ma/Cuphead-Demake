@@ -16,6 +16,7 @@ TIMERCOUNT2 EQU 7166
 
 ; Boss Start
 BOSSSTART EQU 8027
+TOMBSTART EQU 7983
 
 ; Could have equates for colors
 
@@ -40,6 +41,8 @@ main
     
     jsr disoptions   ; display the game's options for selection  
 
+    ;jsr distombstone
+    
     ldx #0      ; on "PLAY" option    
 optionchoiceloop
     jsr wait
@@ -134,6 +137,8 @@ select
     jsr clear
 
     jsr playfield
+    
+    jsr distombstone
    
     ; store cuphead at starting position 8076    
     ldx #32        ; cuphead
@@ -772,7 +777,7 @@ disstartscreen
 
     jsr clear         ; clear screen    
     
-    lda #40          ; change to yellow with black border
+    lda #40          ; change to red with black border
     sta $900f
     
     lda #255          ; change where it gets its characters from
@@ -1277,9 +1282,117 @@ bossshootend
     
     rts
     
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Display Tombstone Subroutine ;
+;------------------------------;
+; Displays the Tombstone Boss  ;
+; Args: none                   ;
+; Returns: nothing             ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+distombstone
+    pha
     
+    lda #50
+    sta TOMBSTART+1
+    lda #51
+    sta TOMBSTART+2
     
-    org $1c00
+    lda #52
+    sta TOMBSTART+ROWDIFF
+    lda #53
+    sta TOMBSTART+ROWDIFF+1
+    lda #54
+    sta TOMBSTART+ROWDIFF+2
+    lda #55
+    sta TOMBSTART+ROWDIFF+3
+    
+    lda #56
+    sta TOMBSTART+2*ROWDIFF
+    lda #57
+    sta TOMBSTART+2*ROWDIFF+1
+    lda #58
+    sta TOMBSTART+2*ROWDIFF+2
+    lda #59
+    sta TOMBSTART+2*ROWDIFF+3
+    
+    lda #60
+    sta TOMBSTART+3*ROWDIFF
+    lda #61
+    sta TOMBSTART+3*ROWDIFF+1
+    lda #62
+    sta TOMBSTART+3*ROWDIFF+2
+    lda #63
+    sta TOMBSTART+3*ROWDIFF+3
+    
+    lda #60
+    sta TOMBSTART+4*ROWDIFF
+    lda #64
+    sta TOMBSTART+4*ROWDIFF+1
+    
+    lda 
+    
+        ;19      65
+    .byte #$0, #$ef, #$88, #$88, #$8f, #$88, #$88, #$88
+    ;20
+    .byte #$14, #$94, #$94, #$94, #$94, #$14, #$14, #$14
+    ;21
+    .byte #$14, #$14, #$7f, #$40, #$40, #$40, #$40, #$7f
+    ;22
+    .byte #$8b, #$0, #$ff, #$0, #$0, #$0, #$0, #$ff
+    ;23
+    .byte #$e8, #$0, #$ff, #$0, #$0, #$0, #$0, #$ff
+    ;24      70
+    .byte #$14, #$14, #$ff, #$1, #$1, #$1, #$1, #$ff
+    lda #65
+    sta TOMBSTART+4*ROWDIFF+2
+    lda #66
+    sta TOMBSTART+4*ROWDIFF+3
+    
+    lda #67
+    sta TOMBSTART+5*ROWDIFF
+    lda #68
+    sta TOMBSTART+5*ROWDIFF+1
+    lda #69
+    sta TOMBSTART+5*ROWDIFF+2
+    lda #70
+    sta TOMBSTART+5*ROWDIFF+3
+        
+    ; Color
+    lda #0
+    sta TOMBSTART+1+SPACECOLOFF
+    sta TOMBSTART+2+SPACECOLOFF
+    
+    sta TOMBSTART+ROWDIFF+SPACECOLOFF
+    sta TOMBSTART+ROWDIFF+1+SPACECOLOFF
+    sta TOMBSTART+ROWDIFF+2+SPACECOLOFF
+    sta TOMBSTART+ROWDIFF+3+SPACECOLOFF
+    
+    sta TOMBSTART+2*ROWDIFF+SPACECOLOFF
+    sta TOMBSTART+2*ROWDIFF+1+SPACECOLOFF
+    sta TOMBSTART+2*ROWDIFF+2+SPACECOLOFF
+    sta TOMBSTART+2*ROWDIFF+3+SPACECOLOFF
+    
+    sta TOMBSTART+3*ROWDIFF+SPACECOLOFF
+    sta TOMBSTART+3*ROWDIFF+1+SPACECOLOFF
+    sta TOMBSTART+3*ROWDIFF+2+SPACECOLOFF
+    sta TOMBSTART+3*ROWDIFF+3+SPACECOLOFF
+    
+    sta TOMBSTART+4*ROWDIFF+SPACECOLOFF
+    sta TOMBSTART+4*ROWDIFF+1+SPACECOLOFF
+    sta TOMBSTART+4*ROWDIFF+2+SPACECOLOFF
+    sta TOMBSTART+4*ROWDIFF+3+SPACECOLOFF
+    
+    sta TOMBSTART+5*ROWDIFF+SPACECOLOFF
+    sta TOMBSTART+5*ROWDIFF+1+SPACECOLOFF
+    sta TOMBSTART+5*ROWDIFF+2+SPACECOLOFF
+    sta TOMBSTART+5*ROWDIFF+3+SPACECOLOFF
+        
+    pla
+
+    rts
+    
+    org $1c00  ;64 characters
 data
     ;;;;; Cuphead Logo ;;;;;
     ; Char0
@@ -1394,4 +1507,38 @@ data
     .byte #$1, #$0, #$0, #$0, #$80, #$60, #$1c, #$3
     .byte #$fc, #$0, #$0, #$0, #$0, #$0, #$7, #$f8
     .byte #$4, #$4, #$8, #$10, #$20, #$c0, #$0, #$0
+    
+    ; Char 50 to 70 = Tombstone
+    ;Tombstone
+    ;2    50
+    .byte #$0, #$0, #$0, #$0, #$3, #$0, #$0, #$0 
+    ;3
+    .byte #$0, #$0, #$80, #$80, #$e0, #$80, #$80, #$80
+    ;5
+    .byte #$0, #$0, #$0, #$0, #$1, #$2, #$4, #$9
+    ;6
+    .byte #$7, #$38, #$43, #$9c, #$20, #$40, #$83, #$c
+    ;7
+    .byte #$f0, #$e, #$e1, #$1c, #$2, #$1, #$e0, #$18
+    ;8     55
+    .byte #$0, #$0, #$0, #$80, #$40, #$20, #$90, #$48
+    ;9
+    .byte #$a, #$a, #$12, #$14, #$14, #$14, #$14, #$14
+    ;10
+    .byte #$10, #$2e, #$41, #$46, #$82, #$86, #$80, #$80
+    ;11
+    .byte #$4, #$3a, #$41, #$31, #$10, #$30, #$80, #$0
+    ;12
+    .byte #$28, #$28, #$24, #$14, #$94, #$94, #$94, #$94
+    ;13/17      60 
+    .byte #$14, #$14, #$14, #$14, #$14, #$14, #$14, #$14
+    ;14
+    .byte #$83, #$45, #$47, #$25, #$13, #$c, #$3, #$0
+    ;15
+    .byte #$e0, #$51, #$f1, #$52, #$e4, #$18, #$e0, #$0
+    ;16
+    .byte #$94, #$14, #$14, #$14, #$14, #$14, #$14, #$14 
+    ;18   -max...
+    .byte #$0, #$fb, #$88, #$88, #$f8, #$c0, #$a0, #$90
+
     
