@@ -200,7 +200,7 @@ left    ldx $0
 right   ldx $0
         inx                     ; move right
         txa
-        cmp #$e
+        cmp #$10
         beq endloop
         stx $0
         jmp endloop
@@ -259,10 +259,10 @@ shoottimer   ; make the notes last a little longer
 bulletloop    
     inx            ; reg X = y location of player without screen offset
     txa
-    sbc #13
+    sbc #15
     beq shootend
     txa 
-    sbc #14        ; past boss
+    sbc #16        ; past boss
     bpl shootend
     jsr wait2      ; pause for a bit
     jsr wait2
@@ -299,7 +299,7 @@ shootend
     jsr wait2 
 
     lda #12         ;erase last bullet
-    sta $1f9a
+    sta $1f9c
 
     pla     ; load registers
     tay
@@ -517,6 +517,12 @@ printlives
     sta BOSSSTART+1+3*ROWDIFF+SPACECOLOFF
     sta BOSSSTART+2+3*ROWDIFF+SPACECOLOFF
     sta BOSSSTART+3+3*ROWDIFF+SPACECOLOFF
+    
+    ; Platforms
+    lda #30
+    sta 8036
+    sta 8044
+    sta 7994
         
     pla     ; reload x and acc
     tax
@@ -535,7 +541,13 @@ printfloor
     pha
 
     ;lda #$a2        ; Floor
+    cpx #0
+    bne otherld
+    lda #31
+    jmp startfloor
+otherld    
     lda #11
+startfloor
     sta $1fa2,X
     sta $1fa3,X
     sta $1fa4,X
@@ -1202,13 +1214,13 @@ bossshoottimer   ; make the notes last a little longer
     
     ; Draw first bullet
     lda #29
-    sta CUPYOFFSET+14
+    sta CUPYOFFSET+16
     
     lda #6
-    sta CUPYOFFSET+14+SPACECOLOFF
+    sta CUPYOFFSET+16+SPACECOLOFF
     
     ;DRAW BULLET
-    ldx #14                ; start position of drawing bullet
+    ldx #16                ; start position of drawing bullet
 
     ldy $1 ;load in y coordinate
 bossbulletloop    
@@ -1382,6 +1394,4 @@ data
     .byte #$1, #$0, #$0, #$0, #$80, #$60, #$1c, #$3
     .byte #$fc, #$0, #$0, #$0, #$0, #$0, #$7, #$f8
     .byte #$4, #$4, #$8, #$10, #$20, #$c0, #$0, #$0
-    
-
     
