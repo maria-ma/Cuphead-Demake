@@ -19,6 +19,21 @@ TIMERCOUNT2 EQU 7166
 BOSSSTART EQU 8027
 TOMBSTART EQU 7983
 
+; Collision Resolution Stuff
+BOSSPOSI EQU 17   ; where the boss is on the playing field
+CHSHOOT EQU $0310
+BSHOOT EQU $0311
+
+; Lives
+CHLIVES EQU $0312
+BOSSLIVES EQU $0313
+
+; Displaying Results
+MSGSTART EQU 7814
+CUPMSGSTART EQU MSGSTART+66+2
+WORDSTART EQU MSGSTART +44+6
+
+
 ; Could have equates for colors
 
     ; target processor, tells dasm which processor we want
@@ -55,7 +70,6 @@ optionchoiceloop
 
     cmp #32                                 ; space		
     beq select
-    ;jmp loop
 
     jmp optionchoiceloop
     
@@ -118,12 +132,16 @@ continue
     jsr playfield
     
     ;jsr distombstone
+    ;lda #0
+    ;sta CHLIVES
+    
+    ;jsr diswindead
    
     ; store cuphead at starting position 8076
     ldx #31    
     stx 8076
     ldx #2     ; red
-    stx 8076+SPACECOLOFF
+    stx 8076+SPACECOLOFF    
         
         ; start at position 0,0
          ldx #0
@@ -505,7 +523,7 @@ printlives
     lda #29
     sta 8036
     sta 8044
-    sta 7994
+    ;sta 7994
         
     pla     ; reload x and acc
     tax
@@ -1242,6 +1260,102 @@ bossshootend
     
     rts
     
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Win/Dead Screen Display                  ;
+;------------------------------------------;
+; Args: None (get info from cuphead lives) ;
+; Returns: Nothing                         ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+diswindead
+    ldy #16
+    lda #11
+spaceloop
+    cpy #0
+    beq cupprint
+    
+    sta MSGSTART,Y  ; Print white block here
+    sta MSGSTART+176,Y  
+    dey
+    jmp spaceloop  
+    
+cupprint    
+    ; Display Cuphead Figure
+    lda #0
+    sta CUPMSGSTART
+    
+    lda #1
+    sta CUPMSGSTART+ROWDIFF
+    
+    lda #2
+    sta CUPMSGSTART+2*ROWDIFF
+    
+    lda #3
+    sta CUPMSGSTART+3*ROWDIFF
+    
+    lda #4
+    sta CUPMSGSTART+1
+    
+    lda #5
+    sta CUPMSGSTART+1+ROWDIFF
+    
+    lda #6
+    sta CUPMSGSTART+1+2*ROWDIFF
+    
+    lda #7
+    sta CUPMSGSTART+1+3*ROWDIFF
+    
+    lda #8
+    sta CUPMSGSTART+2
+    
+    lda #9
+    sta CUPMSGSTART+2+ROWDIFF
+    
+    lda #10
+    sta CUPMSGSTART+2+3*ROWDIFF
+
+    ; If 0, display Lose
+    lda CHLIVES
+    beq deadword
+    
+    ; Otherwise, show win 
+    ; Win Sound Effect
+    
+    ; Display YAY
+    lda #16  ;Y
+    sta WORDSTART
+    sta WORDSTART+2
+    lda #15  ;A
+    sta WORDSTART+1
+    
+    jmp selectwait
+    
+deadword 
+    ; Lose Sound effect
+    
+    ; Display DEAD
+    lda #20
+    sta WORDSTART
+    sta WORDSTART+3
+    lda #19
+    sta WORDSTART+1
+    lda #15
+    sta WORDSTART+2
+
+selectwait   
+    jsr wait
+    jsr wait
+    lda 197                                 ; current key pressed
+
+    cmp #32                                 ; space		
+    beq backtobegin
+
+    jmp selectwait 
+backtobegin
+    jsr main
+   
+    rts
+    
+    
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Display Tombstone Subroutine ;
 ;------------------------------;
@@ -1253,6 +1367,8 @@ bossshootend
 distombstone
     pha
     
+    lda #49
+    sta TOMBSTART
     lda #50
     sta TOMBSTART+1
     lda #51
@@ -1264,92 +1380,45 @@ distombstone
     sta TOMBSTART+ROWDIFF+1
     lda #54
     sta TOMBSTART+ROWDIFF+2
+    
     lda #55
-    sta TOMBSTART+ROWDIFF+3
-    
-    lda #56
     sta TOMBSTART+2*ROWDIFF
-    lda #57
+    lda #56
     sta TOMBSTART+2*ROWDIFF+1
-    lda #58
+    lda #57
     sta TOMBSTART+2*ROWDIFF+2
-    lda #59
-    sta TOMBSTART+2*ROWDIFF+3
-    
-    lda #60
+       
+    lda #58
     sta TOMBSTART+3*ROWDIFF
-    lda #61
+    lda #59
     sta TOMBSTART+3*ROWDIFF+1
-    lda #62
-    sta TOMBSTART+3*ROWDIFF+2
-    lda #63
-    sta TOMBSTART+3*ROWDIFF+3
-    
     lda #60
-    sta TOMBSTART+4*ROWDIFF
-    lda #64
-    sta TOMBSTART+4*ROWDIFF+1
-    
-    ;lda 
-    ; Overwritten by screen memory
-    ;20     65
-    .byte #$14, #$94, #$94, #$94, #$94, #$14, #$14, #$14
-    ;21
-    .byte #$14, #$14, #$7f, #$40, #$40, #$40, #$40, #$7f
-    ;22
-    .byte #$8b, #$0, #$ff, #$0, #$0, #$0, #$0, #$ff
-    ;23
-    .byte #$e8, #$0, #$ff, #$0, #$0, #$0, #$0, #$ff
-    ;24      69
-    .byte #$14, #$14, #$ff, #$1, #$1, #$1, #$1, #$ff
-
-    lda #65
-    sta TOMBSTART+4*ROWDIFF+2
-    lda #66
-    sta TOMBSTART+4*ROWDIFF+3
-    
-    lda #67
-    sta TOMBSTART+5*ROWDIFF
-    lda #68
-    sta TOMBSTART+5*ROWDIFF+1
-    lda #69
-    sta TOMBSTART+5*ROWDIFF+2
-    lda #70
-    sta TOMBSTART+5*ROWDIFF+3
+    sta TOMBSTART+3*ROWDIFF+2
         
     ; Color - Black
     lda #0
+    sta TOMBSTART+SPACECOLOFF
     sta TOMBSTART+1+SPACECOLOFF
     sta TOMBSTART+2+SPACECOLOFF
     
     sta TOMBSTART+ROWDIFF+SPACECOLOFF
     sta TOMBSTART+ROWDIFF+1+SPACECOLOFF
     sta TOMBSTART+ROWDIFF+2+SPACECOLOFF
-    sta TOMBSTART+ROWDIFF+3+SPACECOLOFF
     
     sta TOMBSTART+2*ROWDIFF+SPACECOLOFF
     sta TOMBSTART+2*ROWDIFF+1+SPACECOLOFF
     sta TOMBSTART+2*ROWDIFF+2+SPACECOLOFF
-    sta TOMBSTART+2*ROWDIFF+3+SPACECOLOFF
-    
+       
     sta TOMBSTART+3*ROWDIFF+SPACECOLOFF
     sta TOMBSTART+3*ROWDIFF+1+SPACECOLOFF
     sta TOMBSTART+3*ROWDIFF+2+SPACECOLOFF
-    sta TOMBSTART+3*ROWDIFF+3+SPACECOLOFF
-    
-    sta TOMBSTART+4*ROWDIFF+SPACECOLOFF
-    sta TOMBSTART+4*ROWDIFF+1+SPACECOLOFF
-    sta TOMBSTART+4*ROWDIFF+2+SPACECOLOFF
-    sta TOMBSTART+4*ROWDIFF+3+SPACECOLOFF
-    
-    sta TOMBSTART+5*ROWDIFF+SPACECOLOFF
-    sta TOMBSTART+5*ROWDIFF+1+SPACECOLOFF
-    sta TOMBSTART+5*ROWDIFF+2+SPACECOLOFF
-    sta TOMBSTART+5*ROWDIFF+3+SPACECOLOFF
         
     pla
 
     rts
+    
+    
+    
     
     org $1c00  ;64 characters
 data
@@ -1465,49 +1534,38 @@ data
     .byte #$4, #$4, #$8, #$10, #$20, #$c0, #$0, #$0 ;48
     
     ; Char 49 to 69 = Tombstone
-    ;Tombstone
-    ;2    
-    .byte #$0, #$0, #$0, #$0, #$3, #$0, #$0, #$0 
-    ;3     ;50
-    .byte #$0, #$0, #$80, #$80, #$e0, #$80, #$80, #$80
+    ;1
+    .byte #$0, #$0, #$0, #$0, #$0, #$3, #$4, #$9
+
+    ;2      50
+    .byte #$10, #$38, #$10, #$10, #$fe, #$1, #$7c, #$83
+
+    ;3
+    .byte #$0, #$0, #$0, #$0, #$0, #$80, #$40, #$20
+
+    ;4
+    .byte #$12, #$24, #$28, #$49, #$52, #$52, #$52, #$52
+
     ;5
-    .byte #$0, #$0, #$0, #$0, #$1, #$2, #$4, #$9
+    .byte #$0, #$7c, #$c6, #$29, #$c6, #$42, #$d6, #$0
+
     ;6
-    .byte #$7, #$38, #$43, #$9c, #$20, #$40, #$83, #$c
-    ;7
-    .byte #$f0, #$e, #$e1, #$1c, #$2, #$1, #$e0, #$18
-    ;8     
-    .byte #$0, #$0, #$0, #$80, #$40, #$20, #$90, #$48
-    ;9    55
-    .byte #$a, #$a, #$12, #$14, #$14, #$14, #$14, #$14
+    .byte #$90, #$48, #$28, #$24, #$94, #$94, #$94, #$94
+
+    ;7      55
+    .byte #$52, #$51, #$50, #$50, #$50, #$57, #$54, #$57
+
+    ;8
+    .byte #$38, #$45, #$82, #$7c, #$0, #$bb, #$92, #$93
+
+    ;9
+    .byte #$94, #$14, #$14, #$14, #$14, #$d4, #$54, #$d4
+
     ;10
-    .byte #$10, #$2e, #$41, #$46, #$82, #$86, #$80, #$80
+    .byte #$56, #$55, #$54, #$50, #$ff, #$80, #$80, #$ff
+
     ;11
-    .byte #$4, #$3a, #$41, #$31, #$10, #$30, #$80, #$0
-    ;12
-    .byte #$28, #$28, #$24, #$14, #$94, #$94, #$94, #$94
-    ;13/17      
-    .byte #$14, #$14, #$14, #$14, #$14, #$14, #$14, #$14
-    ;14      60 
-    .byte #$83, #$45, #$47, #$25, #$13, #$c, #$3, #$0
-    ;15
-    .byte #$e0, #$51, #$f1, #$52, #$e4, #$18, #$e0, #$0
-    ;16
-    .byte #$94, #$14, #$14, #$14, #$14, #$14, #$14, #$14 
-    ;18   
-    .byte #$0, #$fb, #$88, #$88, #$f8, #$c0, #$a0, #$90
-    ;19      -max...
-    .byte #$0, #$ef, #$88, #$88, #$8f, #$88, #$88, #$88
-    
-    ; Overwritten by screen memory
-    ;20     65
-    .byte #$14, #$94, #$94, #$94, #$94, #$14, #$14, #$14
-    ;21
-    .byte #$14, #$14, #$7f, #$40, #$40, #$40, #$40, #$7f
-    ;22
-    .byte #$8b, #$0, #$ff, #$0, #$0, #$0, #$0, #$ff
-    ;23
-    .byte #$e8, #$0, #$ff, #$0, #$0, #$0, #$0, #$ff
-    ;24      69
-    .byte #$14, #$14, #$ff, #$1, #$1, #$1, #$1, #$ff
-    
+    .byte #$12, #$12, #$ba, #$0, #$ff, #$0, #$0, #$ff
+
+    ;12     60
+    .byte #$14, #$14, #$14, #$14, #$fe, #$2, #$2, #$fe
