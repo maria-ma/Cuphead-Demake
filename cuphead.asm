@@ -17,7 +17,7 @@ TIMERCOUNT2 EQU 7166
 
 ; Boss Start
 BOSSSTART EQU 8027
-TOMBSTART EQU 7983
+TOMBSTART EQU 8027
 
 ; Collision Resolution Stuff
 BOSSPOSI EQU 17   ; where the boss is on the playing field
@@ -131,7 +131,7 @@ continue
 
     jsr playfield
     
-    ;jsr distombstone
+    jsr distombstone
     ;lda #0
     ;sta CHLIVES
     
