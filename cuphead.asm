@@ -27,7 +27,7 @@ BSHOOT EQU $0311
 ; Lives
 CHLIVES EQU $0312
 BOSSLIVES EQU $0313
-CHSCORE EQU $0314
+BOSSHALF EQU $0334
 
 ; Displaying Results
 MSGSTART EQU 7814
@@ -125,6 +125,9 @@ continue
 	
     lda #3			; initiate lives
     sta CHLIVES
+	sta BOSSHALF	; to know when to transition boss stages
+	asl 			; initiate boss lives
+	sta BOSSLIVES
     
     ; set up for boss check
     lda #$99
@@ -135,7 +138,7 @@ continue
 
     jsr playfield
     
-    jsr distombstone
+    ;jsr distombstone
     
     ;jsr diswindead
    
@@ -152,6 +155,7 @@ continue
     
 loop    ; Check if boss shoots
         jsr boss_shoot_check
+		jsr boss_life_check
         
         jsr wait
         lda 197                                 ; current key pressed
@@ -217,6 +221,31 @@ down    ldx $1      ;
         ; stx $1    ;commented out so don't move down
         jmp endloop 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;Boss Life Check Subroutine                         ;
+;---------------------------------------------------;
+; checks the boss's remaining hp                    ;
+; to see if it should transition to its second stage;
+; or if it has died yet                             ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+		
+boss_life_check
+	lda BOSSLIVES
+	cmp BOSSHALF
+	beq boss_half
+	cmp	#0
+	beq boss_dead
+	rts
+	
+boss_half
+	jsr distombstone
+	rts
+
+boss_dead
+	jsr diswindead
+	rts
+		
 ;;;;;;;;;;;;;;;;;;;
 ;SHOOT SUBROUTINE ;
 ; args: none      ;
@@ -304,6 +333,8 @@ shootend
     lda #12         ;erase last bullet
     sta $1f9c
 
+	dec BOSSLIVES
+	
     pla     ; load registers
     tay
     pla
