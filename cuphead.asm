@@ -27,6 +27,7 @@ BSHOOT EQU $0311
 ; Lives
 CHLIVES EQU $0312
 BOSSLIVES EQU $0313
+CHSCORE EQU $0314
 
 ; Displaying Results
 MSGSTART EQU 7814
@@ -121,6 +122,9 @@ continue
     
     lda #184          ; change to light cyan
     sta $900f
+	
+    lda #3			; initiate lives
+    sta CHLIVES
     
     ; set up for boss check
     lda #$99
@@ -132,8 +136,6 @@ continue
     jsr playfield
     
     jsr distombstone
-    ;lda #0
-    ;sta CHLIVES
     
     ;jsr diswindead
    
@@ -446,20 +448,10 @@ printspaces23
     jsr printfloor
     ldx #ROWDIFF*3
     jsr printfloor
-    
-printlives
-    ; lives
-    ; char
-    lda #27       
-    sta $1e17    
-    sta $1e18
-    sta $1e19
-    ;color
-    lda #2
-    sta $1e17+SPACECOLOFF    
-    sta $1e18+SPACECOLOFF
-    sta $1e19+SPACECOLOFF
-    
+	
+	jsr printlives
+
+printboss
     ;boss
     lda #33     ;row 1
     sta BOSSSTART
@@ -530,7 +522,54 @@ printlives
     pla
     
     rts
+	
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Print Lives Subroutine                     ;
+;--------------------------------------------;
+; Prints Cuphead's current number of lives   ;
+; Updates whenever Cuphead gets hit          ;
+; (When life reaches 0, jump to lose screen) ;
+; Args: None (get infro from cuphead lives)  ;
+; Returns: Nothing                           ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+printlives
+    ; lives
+	ldx CHLIVES
+	cpx #0
+	bne drawhearts
+	lda #3 ;cyan
+    sta $1e17+SPACECOLOFF   
+	jsr diswindead
+	rts
+
+drawhearts	
+    ; char
+    lda #27  ; heart symbol
+    sta $1e17  ; heart #1
+    sta $1e18 ; heart #2
+    sta $1e19 ; heart #3
+	
+    ldy #2   ; red
+	lda #3	 ; cyan 
+
+    sty $1e17+SPACECOLOFF   
+	
+	cpx #2
+	bmi oneheart
+    sty $1e18+SPACECOLOFF
+	cpx #3
+	bmi twoheart
+    sty $1e19+SPACECOLOFF
+	rts
+	
+oneheart
+    sta $1e18+SPACECOLOFF
+	rts
+twoheart
+    sta $1e19+SPACECOLOFF 
+	rts	
+	
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; PRINTFLOOR SUBROUTINE                     ;
 ; Arg: level of floor to printfloor; in X   ;
@@ -1252,6 +1291,9 @@ bossshootend
     ldy $1
     sta CUPYOFFSET+1,X
 
+	dec CHLIVES		; update cuphead's life when hit
+	jsr printlives
+	
     pla     ; load registers
     tay
     pla
@@ -1259,7 +1301,7 @@ bossshootend
     pla
     
     rts
-    
+	
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Win/Dead Screen Display                  ;
 ;------------------------------------------;
@@ -1354,7 +1396,6 @@ backtobegin
     jsr main
    
     rts
-    
     
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Display Tombstone Subroutine ;
