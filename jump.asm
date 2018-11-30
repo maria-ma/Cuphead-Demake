@@ -28,6 +28,7 @@ BSHOOT EQU $0311
 ; Lives
 CHLIVES EQU $0312
 BOSSLIVES EQU $0313
+BOSSHALF EQU $0334
 
 ; Displaying Results
 MSGSTART EQU 7814
@@ -122,6 +123,12 @@ continue
     
     lda #184          ; change to light cyan
     sta $900f
+	
+    lda #3			; initiate lives
+    sta CHLIVES
+	sta BOSSHALF	; to know when to transition boss stages
+	asl 			; initiate boss lives
+	sta BOSSLIVES
     
     ; set up for boss check
     lda #$99
@@ -132,9 +139,7 @@ continue
 
     jsr playfield
     
-    jsr distombstone
-    ;lda #0
-    ;sta CHLIVES
+    ;jsr distombstone
     
     ;jsr diswindead
    
@@ -151,6 +156,7 @@ continue
     
 loop    ; Check if boss shoots
         jsr boss_shoot_check
+		jsr boss_life_check
         
         jsr wait
         lda 197                                 ; current key pressed
@@ -173,6 +179,9 @@ jump
 ; doesn't go on platform - need collisions
 ; doesn't animate when boss shoots (problemo :D)
 
+        ldx $0
+		lda #12					
+		sta CUPYOFFSET,X		; TODO: make a jump to the clouds
         ; make jumping cuphead
         lda #31
         sta CUPXOFFSET,X
@@ -190,23 +199,17 @@ jump
         sta CUPXOFFSET,X
 
         jmp endloop
+        
 
 endloop 
         ldx $0
         lda #12
         sta CUPYOFFSET-1,X   
         sta CUPYOFFSET+1,X          
-
+        
         jsr draw
         jmp loop
-        
-up      ldx $1
-        dex                                     ; move up 1
-        txa
-        cmp #$ff                                ; boundaries
-        beq endloop
-        ; stx $1     ;commented out so don't move up
-        jmp endloop
+
 
 ; be able to move left or right only for now
 ; assume down is not an option
@@ -237,6 +240,31 @@ down    ldx $1      ;
         ; stx $1    ;commented out so don't move down
         jmp endloop 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;Boss Life Check Subroutine                         ;
+;---------------------------------------------------;
+; checks the boss's remaining hp                    ;
+; to see if it should transition to its second stage;
+; or if it has died yet                             ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+		
+boss_life_check
+	lda BOSSLIVES
+	cmp BOSSHALF
+	beq boss_half
+	cmp	#0
+	beq boss_dead
+	rts
+	
+boss_half
+	jsr distombstone
+	rts
+
+boss_dead
+	jsr diswindead
+	rts
+		
 ;;;;;;;;;;;;;;;;;;;
 ;SHOOT SUBROUTINE ;
 ; args: none      ;
@@ -324,6 +352,8 @@ shootend
     lda #12         ;erase last bullet
     sta $1f9c
 
+	dec BOSSLIVES
+	
     pla     ; load registers
     tay
     pla
@@ -379,11 +409,11 @@ enddraw
         pla
         tax
         pla
-
+        
         rts
 
-draw1   
 
+draw1   
         lda #31
         sta 8076,Y
         
@@ -394,14 +424,13 @@ draw1
         jmp enddraw
         
 draw2  
-
         lda #31
-        sta 8076,X
+        sta 7966,Y
         
         ; add color
         lda #2
-        sta 8076+SPACECOLOFF,X
-    
+        sta 7966+SPACECOLOFF,Y
+        
         jmp enddraw
 
 wait    
@@ -469,20 +498,10 @@ printspaces23
     jsr printfloor
     ldx #ROWDIFF*3
     jsr printfloor
-    
-printlives
-    ; lives
-    ; char
-    lda #27       
-    sta $1e17    
-    sta $1e18
-    sta $1e19
-    ;color
-    lda #2
-    sta $1e17+SPACECOLOFF    
-    sta $1e18+SPACECOLOFF
-    sta $1e19+SPACECOLOFF
-    
+	
+	jsr printlives
+
+printboss
     ;boss
     lda #33     ;row 1
     sta BOSSSTART
@@ -553,7 +572,54 @@ printlives
     pla
     
     rts
+	
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Print Lives Subroutine                     ;
+;--------------------------------------------;
+; Prints Cuphead's current number of lives   ;
+; Updates whenever Cuphead gets hit          ;
+; (When life reaches 0, jump to lose screen) ;
+; Args: None (get infro from cuphead lives)  ;
+; Returns: Nothing                           ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+printlives
+    ; lives
+	ldx CHLIVES
+	cpx #0
+	bne drawhearts
+	lda #3 ;cyan
+    sta $1e17+SPACECOLOFF   
+	jsr diswindead
+	rts
+
+drawhearts	
+    ; char
+    lda #27  ; heart symbol
+    sta $1e17  ; heart #1
+    sta $1e18 ; heart #2
+    sta $1e19 ; heart #3
+	
+    ldy #2   ; red
+	lda #3	 ; cyan 
+
+    sty $1e17+SPACECOLOFF   
+	
+	cpx #2
+	bmi oneheart
+    sty $1e18+SPACECOLOFF
+	cpx #3
+	bmi twoheart
+    sty $1e19+SPACECOLOFF
+	rts
+	
+oneheart
+    sta $1e18+SPACECOLOFF
+	rts
+twoheart
+    sta $1e19+SPACECOLOFF 
+	rts	
+	
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; PRINTFLOOR SUBROUTINE                     ;
 ; Arg: level of floor to printfloor; in X   ;
@@ -1275,6 +1341,9 @@ bossshootend
     ldy $1
     sta CUPYOFFSET+1,X
 
+	dec CHLIVES		; update cuphead's life when hit
+	jsr printlives
+	
     pla     ; load registers
     tay
     pla
@@ -1282,7 +1351,7 @@ bossshootend
     pla
     
     rts
-    
+	
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Win/Dead Screen Display                  ;
 ;------------------------------------------;
@@ -1377,7 +1446,6 @@ backtobegin
     jsr main
    
     rts
-    
     
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Display Tombstone Subroutine ;
