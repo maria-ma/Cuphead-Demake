@@ -160,13 +160,12 @@ loop    ; Check if boss shoots
         
         jsr wait
         lda 197                                 ; current key pressed
-        cmp #9                                  ; w
-        beq jump                                ; up
         cmp #17                                 ; a
         beq left                                ; left
         cmp #18                                 ; d
         beq right                               ; right
-        
+        cmp #9                                  ; w
+        beq jump                                ; up
         ; check if pressed shoot button
         cmp #32                                 ; space		
         beq shoot
@@ -553,7 +552,7 @@ printboss
     sta BOSSSTART+1+3*ROWDIFF+SPACECOLOFF
     sta BOSSSTART+2+3*ROWDIFF+SPACECOLOFF
     sta BOSSSTART+3+3*ROWDIFF+SPACECOLOFF
-    
+ 
     ; Platforms
     lda #29
     sta 8036
