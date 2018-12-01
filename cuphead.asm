@@ -173,7 +173,7 @@ loop    ; Check if boss shoots
         
 jump
 ; animated jump routine
-; doesn't go on platform - need collisions
+; doesn't go on platform
 ; doesn't animate when boss shoots (problemo)
 
         ; removes previous cuphead when jump is pressed
@@ -199,8 +199,15 @@ jump
         lda #12
         sta CUPXOFFSET,X
 
+        ; check place on screen?
+        lda 211                 ; position of cursor?
+        cmp #5,X                ; checking every 5st position, want single spot?
+        beq jump1
+
         jmp endloop
-        
+jump1
+        jsr chplaceholder 
+        jmp endloop
 
 endloop 
         ldx $0
@@ -231,6 +238,22 @@ right   ldx $0
         beq endloop
         stx $0
         jmp endloop
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ;
+; Placeholder Cuphead for jump  ;
+;-------------------------------;
+; displays cuphead when on jump ;
+; Args: none                    ;
+; Returns: nothing              ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+chplaceholder   
+    ; placeholder cuphead
+    lda #31
+    sta 8014
+    lda #2      ; store color of cuphead
+    sta 8014+SPACECOLOFF
+    rts   
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Boss Life Check Subroutine                         ;
@@ -553,9 +576,11 @@ printboss
     sta BOSSSTART+2+3*ROWDIFF+SPACECOLOFF
     sta BOSSSTART+3+3*ROWDIFF+SPACECOLOFF
  
+
     ; Platforms
     lda #29
     sta 8036
+
     sta 8044
     ;sta 7994
         
@@ -1499,9 +1524,6 @@ distombstone
     pla
 
     rts
-    
-    
-    
     
     org $1c00  ;64 characters
 data
