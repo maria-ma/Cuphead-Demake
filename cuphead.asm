@@ -2,6 +2,7 @@
 ; testing drawing something meaniningful with VIC Characters
 SPACECOLOFF EQU $7800  ; difference between location in space and it's color location
 CUPYOFFSET EQU 8076
+CUPXOFFSET EQU 8054
 ROWDIFF EQU 22
 
 ; For drawing start screen
@@ -160,11 +161,9 @@ loop    ; Check if boss shoots
         jsr wait
         lda 197                                 ; current key pressed
         cmp #9                                  ; w
-        beq up                                  ; up
+        beq jump                                ; up
         cmp #17                                 ; a
         beq left                                ; left
-        cmp #41                                 ; s
-        beq down                                ; down
         cmp #18                                 ; d
         beq right                               ; right
         
@@ -173,6 +172,35 @@ loop    ; Check if boss shoots
         beq shoot
         jmp loop
         
+jump
+; animated jump routine
+; doesn't go on platform - need collisions
+; doesn't animate when boss shoots (problemo)
+
+        ; removes previous cuphead when jump is pressed
+        ldx $0         
+		lda #12					
+		sta CUPYOFFSET,X		; TODO: make a jump to the clouds
+
+        ; make jumping cuphead
+        lda #31
+        sta CUPXOFFSET,X
+
+        ; store color of jumping cuphead
+        lda #2
+        sta CUPXOFFSET+SPACECOLOFF,X
+
+        ; wait a bit
+        jsr wait
+        jsr wait
+        jsr wait
+        jsr wait
+
+        ; remove jumping cuphead
+        lda #12
+        sta CUPXOFFSET,X
+
+        jmp endloop
         
 
 endloop 
@@ -183,14 +211,7 @@ endloop
         
         jsr draw
         jmp loop
-        
-up      ldx $1
-        dex                                     ; move up 1
-        txa
-        cmp #$ff                                ; boundaries
-        beq endloop
-        ;stx $1     ;commented out so don't move up
-        jmp endloop
+
 
 ; be able to move left or right only for now
 ; assume down is not an option
@@ -211,15 +232,6 @@ right   ldx $0
         beq endloop
         stx $0
         jmp endloop
-
-
-down    ldx $1      ;
-        inx
-        txa
-        cmp #$10    ; stop at floor
-        beq endloop
-        ; stx $1    ;commented out so don't move down
-        jmp endloop 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Boss Life Check Subroutine                         ;
