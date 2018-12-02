@@ -22,8 +22,8 @@ TOMBSTART EQU 8027
 
 ; Collision Resolution Stuff
 BOSSPOSI EQU 17   ; where the boss is on the playing field
-CHSHOOT EQU $0310
-BSHOOT EQU $0311
+CHSHOOT EQU $1de0
+BSHOOT EQU $1de1
 
 ; Lives
 CHLIVES EQU $0312
@@ -1417,6 +1417,12 @@ cupprint
     
     ; Otherwise, show win 
     ; Win Sound Effect
+    lda #240    ; G
+    sta $900c
+    jsr wait
+    jsr wait
+    lda #0
+    sta $900c
     
     ; Display YAY
     lda #16  ;Y
@@ -1425,10 +1431,18 @@ cupprint
     lda #15  ;A
     sta WORDSTART+1
     
-    jmp selectwait
+infinite    
+    jmp infinite
+    
     
 deadword 
     ; Lose Sound effect
+    lda #135    ; G
+    sta $900a
+    jsr wait
+    jsr wait
+    lda #0
+    sta $900a
     
     ; Display DEAD
     lda #20
@@ -1450,7 +1464,7 @@ selectwait
     jmp selectwait 
 backtobegin
     jsr main
-   
+
     rts
     
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1509,6 +1523,13 @@ distombstone
     sta TOMBSTART+3*ROWDIFF+SPACECOLOFF
     sta TOMBSTART+3*ROWDIFF+1+SPACECOLOFF
     sta TOMBSTART+3*ROWDIFF+2+SPACECOLOFF
+        
+    ; Erase Blueberry
+    lda #12
+    sta TOMBSTART+3
+    sta TOMBSTART+ROWDIFF+3
+    sta TOMBSTART+2*ROWDIFF+3
+    sta TOMBSTART+3*ROWDIFF+3    
         
     pla
 
