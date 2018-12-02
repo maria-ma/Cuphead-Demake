@@ -1,9 +1,15 @@
-; Timer - loop for some time then produce output
+; Shooting with interrupts
 CHSHOOT EQU $1de0   ; bit0 =y/n shoot; bit1 and 2=yvalue of shot; rest: position along x axis
 BSHOOT EQU $1de1
 
-CUPX EQU $1de2
+CUPX EQU $1de2  ; Store Cuphead x and Y position    
 CUPY EQU $1de3
+
+CHST1 EQU $1de4 ; cuphead bullet timer
+CHST2 EQU $1de5
+
+BST1 EQU $1de6  ; boss bullet timer
+BST2 EQU $1de7
 
 WORKAREA EQU $1dff
 CUPYOFFSET EQU 8076
@@ -55,8 +61,16 @@ code
     lda #$82
     sta CHSHOOT
     
+    lda #0 
+    sta CHST1
+    sta CHST2
+        
     lda #$90
     sta BSHOOT
+    
+    lda #0 
+    sta BST1
+    sta BST2
     
     cli
     
@@ -82,17 +96,9 @@ timer_isr
     sta $9119
     
     ;beq timer_isr
-    
-    ;lda #$53        ; heart symbol
-    ;jsr $ffd2		; display heart
-
-    ;sta $1fcd
-    
-    ;lda #$04     ; purple
-    ;sta $97cd
-    
+        
     ;;;;;;;;;;;;;;;;;;
-    ; Cuphead Shoot? ;
+    ; Cuphead Shoot  ;
     ;;;;;;;;;;;;;;;;;;
     ; Create a function that is run if yes; it will handle the x and y of the bullet
     lda CHSHOOT
@@ -100,6 +106,19 @@ timer_isr
     
     beq chkboss   ; not shooting, check if boss is shooting
     
+    ; Check if CHST time is at 0
+    lda CHST1
+    beq chst2chk  ; if equal, check next timer
+    dec CHST1     ; if not equal, decrement timer and just move on  
+    jmp chkboss
+    
+chst2chk    
+    lda CHST2
+    beq cisshoot  ; if 0, good to shoot
+    dec CHST2     ; if not equal, decrement timer and just move on  
+    jmp chkboss    
+    
+cisshoot
     ;Shooting Position =  X -(Y*22)
     ; Y position
     lda CHSHOOT
@@ -140,23 +159,29 @@ cupxshot
     sta CUPYOFFSET+SPACECOLOFF,X
 
     inc CHSHOOT    ; next location
-    
+       
+    ; Collision resolution   
+       
+       
     ; Check if end of shot; reset bit 0 of CHSHOOT
     lda CHSHOOT
     and #$10
     ;cmp #     ;BOSSPOSI+4
     ;bmi chkboss  ; if not at end, just move on to if boss shoots
-    beq chkboss
+    beq crsttime 
     lda #0     ; otherwise, clear shoot bit
     sta CHSHOOT
     
-    ; Collision resolution
-    
+crsttime    
+    ; Reset timer if not at end 
+    lda #99
+    sta CHST1
+    sta CHST2 
     
     
     
     ;;;;;;;;;;;;;;;
-    ; Boss Shoot? ;
+    ; Boss Shoot  ;
     ;;;;;;;;;;;;;;;
 chkboss    
     ; Create a function that runs if yes (probably the boss check one from previous except it won't loop until the bullet is done, just moves it one space
@@ -166,6 +191,19 @@ chkboss
     
     beq musicnote   ; not shooting, check if boss is shooting
     
+    ; Check if timers are at 0
+    lda BST1
+    beq bst2chk
+    dec BST1
+    jmp musicnote
+
+bst2chk
+    lda BST2
+    beq bisshoot
+    dec BST2
+    jmp musicnote
+    
+bisshoot    
     ;Shooting Position =  X - (Y*22)
     ; Y position
     lda BSHOOT
@@ -207,7 +245,7 @@ bossxshot
 
     dec BSHOOT    ; next location
     
-     ; Collision resolution first here
+    ; Collision resolution first here
     
     
     ; Otherwise, check if wall reached Check if end of shot; reset bit 0 of BSHOOT   
@@ -215,12 +253,17 @@ bossxshot
     and #$1f
     ;cmp #     ;BOSSPOSI+4
     ;bmi chkboss  ; if not at end, just move on to if boss shoots
-    bne musicnote
+    bne brsttime
     lda #0       ; otherwise, clear shoot bit
     sta BSHOOT
-    
-    
-   
+        
+brsttime   
+    ; Reset timer if not at end 
+    lda #99
+    sta BST1
+    sta BST2 
+
+
     ; Optional: fancy shooting like a shotgun spread or falling from the sky or ...
     
    
