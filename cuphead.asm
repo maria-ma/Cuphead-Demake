@@ -205,7 +205,12 @@ jump
         beq jump1
 
         jmp endloop
+
 jump1
+        ldx $0
+        lda #12
+        sta CUPYOFFSET,Y
+        sta CUPXOFFSET,Y
         jsr chplaceholder 
         jmp endloop
 
@@ -238,22 +243,6 @@ right   ldx $0
         beq endloop
         stx $0
         jmp endloop
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ;
-; Placeholder Cuphead for jump  ;
-;-------------------------------;
-; displays cuphead when on jump ;
-; Args: none                    ;
-; Returns: nothing              ;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-chplaceholder   
-    ; placeholder cuphead
-    lda #31
-    sta 8014
-    lda #2      ; store color of cuphead
-    sta 8014+SPACECOLOFF
-    rts   
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Boss Life Check Subroutine                         ;
@@ -1524,6 +1513,22 @@ distombstone
     pla
 
     rts
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ;
+; Placeholder Cuphead for jump  ;
+;-------------------------------;
+; displays cuphead when on jump ;
+; Args: none                    ;
+; Returns: nothing              ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+chplaceholder   
+    ; placeholder cuphead
+    lda #31
+    sta 8014
+    lda #2      ; store color of cuphead
+    sta 8014+SPACECOLOFF
+    rts   
     
     org $1c00  ;64 characters
 data
