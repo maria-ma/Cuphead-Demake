@@ -157,6 +157,10 @@ cupxshot
     sta CUPYOFFSET,X  ; CUPYOFFSET + X -(Y*22)
     lda #2    ;red
     sta CUPYOFFSET+SPACECOLOFF,X
+    
+    ; Erase previous bullet 
+    lda #12
+    sta CUPYOFFSET-1,X  ; CUPYOFFSET + X -(Y*22)-1
 
     inc CHSHOOT    ; next location
        
@@ -171,6 +175,9 @@ cupxshot
     beq crsttime 
     lda #0     ; otherwise, clear shoot bit
     sta CHSHOOT
+    lda #12     ; also erase last bullet
+    sta CUPYOFFSET,X
+    
     
 crsttime    
     ; Reset timer if not at end 
@@ -242,6 +249,11 @@ bossxshot
     sta CUPYOFFSET+22,X  ; CUPYOFFSET + X -(Y*22)   ;CHANGE AFTER TESTING!!!!!!
     lda #6   ; blue
     sta CUPYOFFSET+22+SPACECOLOFF,X
+    
+    ; Erase previous bullet
+    lda #12   ; space
+    sta CUPYOFFSET+22+1,X
+    
 
     dec BSHOOT    ; next location
     
@@ -256,6 +268,8 @@ bossxshot
     bne brsttime
     lda #0       ; otherwise, clear shoot bit
     sta BSHOOT
+    lda #12     ; also erase last bullet
+    sta CUPYOFFSET+22,X   ;CHANGE AFTER TESTING!!!!!!
         
 brsttime   
     ; Reset timer if not at end 
