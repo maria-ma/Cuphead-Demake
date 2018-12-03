@@ -22,8 +22,6 @@ TOMBSTART EQU 8027
 
 ; Collision Resolution Stuff
 BOSSPOSI EQU 17   ; where the boss is on the playing field
-CHSHOOT EQU $1de0
-BSHOOT EQU $1de1
 
 ; Lives
 CHLIVES EQU $0312
@@ -34,6 +32,18 @@ BOSSHALF EQU $0334
 MSGSTART EQU 7814
 CUPMSGSTART EQU MSGSTART+66+2
 WORDSTART EQU MSGSTART +44+6
+
+; Interrupt Equates
+CHSHOOT EQU $1de8   ; bit0 =y/n shoot; bit1 and 2=yvalue of shot; rest: position along x axis
+BSHOOT EQU $1de9
+
+;CHST1 EQU $1dea  ; cuphead bullet timer
+;CHST2 EQU $1deb
+
+;BST1 EQU $1dec  ; boss bullet timer
+;BST2 EQU $1ded
+
+WORKAREA EQU $1dee
 
 
 ; Could have equates for colors
@@ -121,6 +131,43 @@ continue
     jsr wait
     jsr wait
     
+    ; set up timer and interrupts
+    sei
+    
+    lda $911b
+    and #$df   ; timer 2 countdown enabled
+    ;lda #$df
+    sta $911b
+    
+    lda #$a0    ; enable timer interrupt
+    sta $911e
+    
+    ;$1b94 - location of irq
+    lda #<timer_isr
+    sta $0314
+    
+    lda #>timer_isr
+    sta $0315 
+          
+    lda #0 
+    ;sta CHST1
+    ;sta CHST2
+    sta BSHOOT
+    sta CHSHOOT
+    ;sta BST1
+    ;sta BST2
+    
+    ; set timer 2 to max
+    lda #$ff     
+    sta $9119
+    lda #$ff     
+    sta $9118
+    
+    cli
+    
+    
+    
+    
     lda #184          ; change to light cyan
     sta $900f
 	
@@ -138,6 +185,9 @@ continue
     jsr clear
 
     jsr playfield
+    
+    
+    
     
     ;jsr distombstone
     
@@ -269,17 +319,20 @@ boss_dead
 	jsr diswindead
 	rts
 		
-;;;;;;;;;;;;;;;;;;;
-;SHOOT SUBROUTINE ;
-; args: none      ;
-; returns: nothing;
-;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; CUPHEAD SHOOT SUBROUTINE ;
+; args: none               ;
+; returns: nothing         ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 shoot       
     pha     ; save registers
     txa
     pha 
     tya 
     pha
+    
+    lda CHSHOOT
+    bne skipshoot
     
     ; PLAY SHOOT SOUND EFFECT
     lda #$0f	; vol 15
@@ -304,60 +357,36 @@ shoottimer   ; make the notes last a little longer
     inx
     txa    
     
-    ;DRAW BULLET
-    ldx $0 ; load y coordinate
-    lda #28
-    sta CUPYOFFSET+1,X
-    lda #2  ;make bullet red
-    sta SPACECOLOFF+CUPYOFFSET+1,X
-
-bulletloop    
-    inx            ; reg X = y location of player without screen offset
-    txa
-    sbc #15
-    beq shootend
-    txa 
-    sbc #16        ; past boss
-    bpl shootend
-    jsr wait2      ; pause for a bit
-    jsr wait2
-    jsr wait2
-    jsr wait2
-    jsr wait2
-    jsr wait2 
-    jsr wait2      ; pause for a bit
-    jsr wait2
-    jsr wait2
-    jsr wait2
-    jsr wait2
-    jsr wait2     
-    lda #12         ;erase previous bullet with space
-    sta CUPYOFFSET,X
-    lda #28         ; add next bullet in line
-    sta CUPYOFFSET+1,X
-    lda #2  ;make bullet red
-    sta SPACECOLOFF+CUPYOFFSET+1,X
-    jmp bulletloop
+    ; Set CHSHOOT
+    ; Should be 1yyxxxxx
+    lda $1
+    asl
+    asl
+    asl
+    asl
+    asl
     
-shootend
-    jsr wait2      ; pause for a bit
-    jsr wait2
-    jsr wait2
-    jsr wait2
-    jsr wait2
-    jsr wait2 
-    jsr wait2      ; pause for a bit
-    jsr wait2
-    jsr wait2
-    jsr wait2
-    jsr wait2
-    jsr wait2 
-
-    lda #12         ;erase last bullet
-    sta $1f9c
-
-	dec BOSSLIVES
-	
+    clc
+    adc #$80
+    
+    clc
+    adc $0
+    
+    clc
+    adc #3
+    ; 1 y<<5 x
+    ;lda #$82
+    ;clc
+    ;adc $0
+    
+    sta CHSHOOT
+    
+    ; Set counters
+    ;lda #0 
+    ;sta CHST1
+    ;sta CHST2
+    
+skipshoot
     pla     ; load registers
     tay
     pla
@@ -1244,28 +1273,13 @@ boss_shoot_check
     sbc #255
     bmi bscend
     
-    jsr boss_shoot
+    ;jsr boss_shoot
     
-    ; reset for next round
-    lda #$99
-    sta TIMERCOUNT1   
-    sta TIMERCOUNT2   
-
-bscend
-    rts
+    ; Check if the previous shot ended
+    lda BSHOOT
+    bne skipshootboss   
     
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; BOSS SHOOT SUBROUTINE             ;
-;-----------------------------------;
-; Actually issues bullets from boss ;   
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-boss_shoot
-    pha     ; save registers
-    txa
-    pha
-    tya
-    pha
-    
+    ; Shoot sound effect
     ; PLAY SHOOT SOUND EFFECT
     lda #$0f	; vol 15
 	sta $900e	; store in vol mem (36878)
@@ -1290,73 +1304,40 @@ bossshoottimer   ; make the notes last a little longer
     inx
     txa
     
-    ; Draw first bullet
-    lda #28
-    sta CUPYOFFSET+16
+    ; load BSHOOT
+    ;1yyxxxxx
+    ;lda #0
+    ;sta BST1
+    ;sta BST2
+    lda $1
+    asl
+    asl
+    asl
+    asl
+    asl
     
-    lda #6
-    sta CUPYOFFSET+16+SPACECOLOFF
-    
-    ;DRAW BULLET
-    ldx #16                ; start position of drawing bullet
-
-    ldy $1 ;load in y coordinate
-bossbulletloop    
-    dex            
-    txa
     clc
-    sbc #$0,Y    
+    adc #$80
+    
     clc
-    adc #1
-    beq bossshootend
-    jsr wait2      ; pause for a bit
-    jsr wait2
-    jsr wait2
-    jsr wait2
-    jsr wait2
-    jsr wait2
-    jsr wait2      ; pause for a bit
-    jsr wait2
-    jsr wait2
-    jsr wait2
-    jsr wait2
-    jsr wait2
-    lda #12         ;erase previous bullet with space
-    sta CUPYOFFSET+1,X
-    lda #28         ; add next bullet in line
-    sta CUPYOFFSET,X
-    lda #6  ;make bullet blue
-    sta SPACECOLOFF+CUPYOFFSET,X
-    jmp bossbulletloop
+    adc #$10
     
-bossshootend
-    jsr wait2      ; pause for a bit
-    jsr wait2
-    jsr wait2
-    jsr wait2
-    jsr wait2
-    jsr wait2 
-    jsr wait2      ; pause for a bit
-    jsr wait2
-    jsr wait2
-    jsr wait2
-    jsr wait2
-    jsr wait2 
+    ;adc $0
+    ;clc
+    ;sbc #1
+    ;lda #$90
+    sta BSHOOT
 
-    lda #12         ;erase last bullet
-    ldy $1
-    sta CUPYOFFSET+1,X
+skipshootboss    
+    ; reset for next round
+    lda #$99
+    sta TIMERCOUNT1   
+    sta TIMERCOUNT2   
 
-	dec CHLIVES		; update cuphead's life when hit
-	jsr printlives
-	
-    pla     ; load registers
-    tay
-    pla
-    tax
-    pla
-    
+bscend
     rts
+    
+
 	
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Win/Dead Screen Display                  ;
@@ -1365,6 +1346,8 @@ bossshootend
 ; Returns: Nothing                         ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 diswindead
+    sei
+
     ldy #16
     lda #11
 spaceloop
@@ -1550,6 +1533,316 @@ chplaceholder
     lda #2      ; store color of cuphead
     sta 8014+SPACECOLOFF
     rts   
+    
+    
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; CUPHEAD SHOOT SUBROUTINE            ;
+;-------------------------------------;
+; Continues drawing bullets if needed ;   
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+chshoot
+    pha
+    txa
+    pha
+    
+    ;Shooting Position =  X -(Y*22)
+    ; Y position
+    lda CHSHOOT
+    and #$60
+    ;sta WORKAREA
+    beq cupxshot        ; no y offset
+    
+    cmp $20         ; pos 1
+    bne ynext
+    lda #22
+    jmp cupxshot
+
+ynext    
+    cmp $40         ; pos
+    bne ynextxt
+    lda #44
+    jmp cupxshot
+
+ynextxt    
+    lda #66
+        
+cupxshot  
+    sta WORKAREA
+    ; X position of shot   
+    lda CHSHOOT
+    and #$1f    
+    ;clc 
+    ;adc CUPYOFFSET  ; A = X + CUPYOFSET
+    ;sta WORKAREA   
+    
+    clc
+    sbc WORKAREA
+    tax
+    
+    lda #28   ; bullet
+    sta CUPYOFFSET,X  ; CUPYOFFSET + x -(y*22)
+    lda #2    ;red
+    sta CUPYOFFSET+SPACECOLOFF,X
+    
+    ; Erase previous bullet 
+    lda #12
+    sta CUPYOFFSET-1,X  ; CUPYOFFSET + X -(Y*22)-1
+
+    inc CHSHOOT    ; next location
+       
+    
+    ; Check if end of shot; reset bit 0 of CHSHOOT
+    lda CHSHOOT
+    and #$1f
+    cmp #$12
+    ;cmp #     ;BOSSPOSI+4
+    ;bmi chkboss  ; if not at end, just move on to if boss shoots
+    bne crsttime 
+    lda #0     ; otherwise, clear shoot bit
+    sta CHSHOOT
+    lda #12     ; also erase last bullet
+    sta CUPYOFFSET,X
+    ; Collision resolution  - must have hit boss since he doesn't move
+    dec BOSSLIVES
+    
+    
+crsttime    
+    ; Reset timer if not at end 
+    ;lda #0
+    ;sta CHST1
+    ;lda #0
+    ;sta CHST2 
+    
+    pla
+    tax
+    pla
+    
+    rts
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; BOSS SHOOT SUBROUTINE             ;
+;-----------------------------------;
+; Actually issues bullets from boss ;   
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+bossshoot
+    pha
+    txa
+    pha
+    
+    ;Shooting Position =  X - (Y*22)
+    ; Y position
+    lda BSHOOT
+    and #$60
+    ;sta WORKAREA
+    beq bossxshot        ; no y offset
+    
+    cmp $20         ; pos 1
+    bne bynext
+    lda #22
+    jmp bossxshot
+
+bynext    
+    cmp $40         ; pos
+    bne bynextxt
+    lda #44
+    jmp bossxshot
+
+bynextxt    
+    lda #66
+        
+bossxshot  
+    sta WORKAREA
+    ; X position of shot   
+    lda BSHOOT
+    and #$1f    
+    ;clc 
+    ;adc CUPYOFFSET  ; A = X + CUPYOFSET
+    ;sta WORKAREA   
+    
+    clc
+    sbc WORKAREA
+    tax
+    
+    lda #28   ; bullet
+    sta CUPYOFFSET,X  ; CUPYOFFSET + X -(Y*22)   ;CHANGE AFTER TESTING!!!!!!
+    lda #6   ; blue
+    sta CUPYOFFSET+SPACECOLOFF,X
+    
+    ; Erase previous bullet
+    lda #12   ; space
+    sta CUPYOFFSET+1,X
+    
+
+    
+    
+    ; Collision resolution first here
+    ; if location of bullet == cuphead's location, decrease cuphead's lives
+    ; Check x 
+    lda BSHOOT
+    and #$1f
+    clc
+    sbc #1
+    cmp $0
+    bne wallchk
+    
+    ;Check y
+    lda BSHOOT
+    and #$60
+    cmp $1
+    bne wallchk
+    
+    dec CHLIVES		; update cuphead's life when hit
+	jsr printlives
+    ; Also reset at this point and stop shooting
+    
+    lda #0       ; clear shoot bit
+    sta BSHOOT
+    
+    
+    lda #12     ; also erase last bullet
+    ldx $0
+    sta CUPYOFFSET+1,X   
+    
+    jmp brsttime
+    
+wallchk
+    dec BSHOOT    ; next location
+ 
+    ; check if wall reached Check if end of shot; reset bit 0 of BSHOOT   
+    lda BSHOOT
+    and #$1f
+    ;cmp #     ;BOSSPOSI+4
+    ;bmi chkboss  ; if not at end, just move on to if boss shoots
+    bne brsttime
+    lda #0       ; otherwise, clear shoot bit
+    sta BSHOOT
+    lda #12     ; also erase last bullet
+    sta CUPYOFFSET-1   ;CHANGE AFTER TESTING!!!!!!
+        
+brsttime   
+    ; Reset timer if not at end 
+    ;lda #$3
+    ;sta BST1
+    ;lda #0
+    ;sta BST2 
+    
+    pla
+    tax
+    pla
+   
+    rts
+    
+;;;;;;;;;;;;;;;;;;;;;;;;
+; Timer ISR            ;
+;----------------------;
+; -Cuphead Shooting    ;
+; -Boss Shooting       ;
+; ...                  ;
+;;;;;;;;;;;;;;;;;;;;;;;;
+timer_isr
+    pha
+
+    lda $911d   ; check interupt flags
+    and #$20
+    beq return
+    
+    lda $9118    ; read from low order to reset
+    lda $9119
+    lda #0
+    sta $9119
+    sta $9118
+    
+    ;beq timer_isr
+        
+    ;;;;;;;;;;;;;;;;;;
+    ; Cuphead Shoot  ;
+    ;;;;;;;;;;;;;;;;;;
+    ; Create a function that is run if yes; it will handle the x and y of the bullet
+    lda CHSHOOT
+    and #$80
+    
+    beq chkboss   ; not shooting, check if boss is shooting
+
+    ; Check if CHST time is at 0
+    ;lda CHST1
+    ;beq chst2chk  ; if equal, check next timer
+    ;dec CHST1     ; if not equal, decrement timer and just move on  
+    ;jmp chkboss
+    
+;chst2chk    
+    ;lda CHST2
+    ;beq cisshoot  ; if 0, good to shoot
+    ;dec CHST2     ; if not equal, decrement timer and just move on  
+    ;jmp chkboss    
+ 
+cisshoot 
+    jsr chshoot
+    
+    ;;;;;;;;;;;;;;;
+    ; Boss Shoot  ;
+    ;;;;;;;;;;;;;;;
+chkboss    
+    ; Create a function that runs if yes (probably the boss check one from previous except it won't loop until the bullet is done, just moves it one space
+    ; Create a function that is run if yes; it will handle the x and y of the bullet
+    lda BSHOOT
+    and #$80
+    
+    beq musicnote   ; not shooting, check if boss is shooting
+    
+    ; Check if timers are at 0
+    ;lda BST1
+    ;beq bst2chk
+    ;dec BST1
+    ;jmp musicnote
+
+;bst2chk
+    ;lda BST2
+    ;beq bisshoot
+    ;dec BST2
+    ;jmp musicnote
+    
+    
+;bisshoot 
+    jsr bossshoot
+
+    ; Optional: fancy shooting like a shotgun spread or falling from the sky or ...
+
+    ;;;;;;;;;;
+    ; Music? ;
+    ;;;;;;;;;;
+musicnote
+    ; Which note (if any) gets played
+    
+    
+    
+    ;;;;;;;;;;;;;;;;;;
+    ; Boss Movement? ;
+    ;;;;;;;;;;;;;;;;;;
+    ; Should the boss change positions?
+    
+    ; Collision resolution
+
+    ; set timer
+    ;lda #$ff     
+    ;sta $9119     
+    ;sta $9118   
+    
+    ; set timer 2
+    lda #$07     ; 2s 
+    sta $9119
+    lda #$d0     ; 2s 
+    sta $9118        
+
+return  
+    pla
+    jmp $eabf
+    ;rti
+    ;jmp  $fead
+
+
+
+
+    
     
     org $1c00  ;64 characters
 data
