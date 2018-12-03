@@ -22,8 +22,8 @@ TOMBSTART EQU 8027
 
 ; Collision Resolution Stuff
 BOSSPOSI EQU 17   ; where the boss is on the playing field
-CHSHOOT EQU $0310
-BSHOOT EQU $0311
+CHSHOOT EQU $1de0
+BSHOOT EQU $1de1
 
 ; Lives
 CHLIVES EQU $0312
@@ -37,6 +37,7 @@ SCORE EQU $0335
 MSGSTART EQU 7814
 CUPMSGSTART EQU MSGSTART+66+2
 WORDSTART EQU MSGSTART +44+6
+
 
 ; Could have equates for colors
 
@@ -131,10 +132,10 @@ continue
 	sta BOSSHALF	; to know when to transition boss stages
 	asl 			; initiate boss lives
 	sta BOSSLIVES
-	
+    
 	lda #0
 	sta SCORE
-    
+	
     ; set up for boss check
     lda #$99
     sta TIMERCOUNT1   
@@ -1423,6 +1424,12 @@ cupprint
     
     ; Otherwise, show win 
     ; Win Sound Effect
+    lda #240    ; G
+    sta $900c
+    jsr wait
+    jsr wait
+    lda #0
+    sta $900c
     
     ; Display YAY
     lda #16  ;Y
@@ -1430,11 +1437,20 @@ cupprint
     sta WORDSTART+2
     lda #15  ;A
     sta WORDSTART+1
+	jmp printscore
     
-    jmp printscore
+;infinite    
+;    jmp infinite
+    
     
 deadword 
     ; Lose Sound effect
+    lda #135    ; G
+    sta $900a
+    jsr wait
+    jsr wait
+    lda #0
+    sta $900a
     
     ; Display DEAD
     lda #20
@@ -1444,7 +1460,7 @@ deadword
     sta WORDSTART+1
     lda #15
     sta WORDSTART+2
-	
+
 ; score
 ;  time bonus (check range) * times boss shot * hp bonus * 100
 ; might removie: time bonus and multiplying score at end?
@@ -1476,8 +1492,8 @@ multiplyscore
 ;	sta BOSSHALF
 	sta WORDSTART+2*ROWDIFF+1
 	
-; todo: actual printing
-
+; todo: actual printing	
+	
 selectwait   
     jsr wait
     jsr wait
@@ -1489,9 +1505,9 @@ selectwait
     jmp selectwait 
 backtobegin
     jsr main
-   
+
     rts
-	    
+    
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Display Tombstone Subroutine ;
 ;------------------------------;
@@ -1549,10 +1565,17 @@ distombstone
     sta TOMBSTART+3*ROWDIFF+1+SPACECOLOFF
     sta TOMBSTART+3*ROWDIFF+2+SPACECOLOFF
         
+    ; Erase Blueberry
+    lda #12
+    sta TOMBSTART+3
+    sta TOMBSTART+ROWDIFF+3
+    sta TOMBSTART+2*ROWDIFF+3
+    sta TOMBSTART+3*ROWDIFF+3    
+        
     pla
 
     rts
-	
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ;
 ; Placeholder Cuphead for jump  ;
 ;-------------------------------;
