@@ -358,8 +358,24 @@ shoottimer   ; make the notes last a little longer
     txa    
     
     ; Set CHSHOOT
+    ; Should be 1yyxxxxx
+    lda $1
+    asl
+    asl
+    asl
+    asl
+    asl
+    
+    clc
+    adc #$80
+    
+    clc
+    adc $0
+    
+    clc
+    adc #3
     ; 1 y<<5 x
-    lda #$82
+    ;lda #$82
     ;clc
     ;adc $0
     
@@ -1560,7 +1576,7 @@ cupxshot
     tax
     
     lda #28   ; bullet
-    sta CUPYOFFSET,X  ; CUPYOFFSET + X -(Y*22)
+    sta CUPYOFFSET,X  ; CUPYOFFSET + x -(y*22)
     lda #2    ;red
     sta CUPYOFFSET+SPACECOLOFF,X
     
@@ -1571,13 +1587,13 @@ cupxshot
     inc CHSHOOT    ; next location
        
     
-       
     ; Check if end of shot; reset bit 0 of CHSHOOT
     lda CHSHOOT
-    and #$10
+    and #$1f
+    cmp #$12
     ;cmp #     ;BOSSPOSI+4
     ;bmi chkboss  ; if not at end, just move on to if boss shoots
-    beq crsttime 
+    bne crsttime 
     lda #0     ; otherwise, clear shoot bit
     sta CHSHOOT
     lda #12     ; also erase last bullet
