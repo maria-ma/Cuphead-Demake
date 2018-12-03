@@ -1348,16 +1348,6 @@ bscend
 diswindead
     sei
 
-    ldy #16
-    lda #11
-spaceloop
-    cpy #0
-    beq cupprint
-    
-    sta MSGSTART,Y  ; Print white block here
-    sta MSGSTART+176,Y  
-    dey
-    jmp spaceloop  
     
 cupprint    
     ; Display Cuphead Figure
@@ -1414,6 +1404,25 @@ cupprint
     lda #15  ;A
     sta WORDSTART+1
     
+    ldy #16
+    lda #2
+redspaceloop
+    cpy #0
+    beq infinite  
+    
+    sta MSGSTART+SPACECOLOFF,Y  ; Make red here
+    sta MSGSTART+SPACECOLOFF+176,Y  
+    
+    lda #11
+    sta MSGSTART,Y  ; Print block here
+    sta MSGSTART+176,Y  
+    
+    lda #2    
+    
+    dey
+    jmp redspaceloop
+
+    
 infinite    
     jmp infinite
     
@@ -1427,6 +1436,7 @@ deadword
     lda #0
     sta $900a
     
+        
     ; Display DEAD
     lda #20
     sta WORDSTART
@@ -1435,8 +1445,27 @@ deadword
     sta WORDSTART+1
     lda #15
     sta WORDSTART+2
-
-selectwait   
+    
+    ldy #16
+    lda #0
+blackspaceloop
+    cpy #0
+    beq selectwait   
+    
+    sta MSGSTART+SPACECOLOFF,Y  ; Make red here
+    sta MSGSTART+SPACECOLOFF+176,Y  
+    
+    lda #11
+    sta MSGSTART,Y  ; Print block here
+    sta MSGSTART+176,Y  
+    
+    lda #0    
+    
+    dey
+    jmp blackspaceloop
+  
+    
+selectwait  
     jsr wait
     jsr wait
     lda 197                                 ; current key pressed
