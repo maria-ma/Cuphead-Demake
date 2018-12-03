@@ -34,16 +34,16 @@ CUPMSGSTART EQU MSGSTART+66+2
 WORDSTART EQU MSGSTART +44+6
 
 ; Interrupt Equates
-CHSHOOT EQU $1c3d   ; bit0 =y/n shoot; bit1 and 2=yvalue of shot; rest: position along x axis
-BSHOOT EQU $1c3e
+CHSHOOT EQU $1de8   ; bit0 =y/n shoot; bit1 and 2=yvalue of shot; rest: position along x axis
+BSHOOT EQU $1de9
 
-CHST1 EQU $1c3f  ; cuphead bullet timer
-CHST2 EQU $1c40
+CHST1 EQU $1dea  ; cuphead bullet timer
+CHST2 EQU $1deb
 
-BST1 EQU $1c41  ; boss bullet timer
-BST2 EQU $1c42
+BST1 EQU $1dec  ; boss bullet timer
+BST2 EQU $1ded
 
-WORKAREA EQU $1c43
+WORKAREA EQU $1dee
 
 
 ; Could have equates for colors
@@ -354,60 +354,20 @@ shoottimer   ; make the notes last a little longer
     inx
     txa    
     
-    ;DRAW BULLET
-    ldx $0 ; load y coordinate
-    lda #28
-    sta CUPYOFFSET+1,X
-    lda #2  ;make bullet red
-    sta SPACECOLOFF+CUPYOFFSET+1,X
-
-bulletloop    
-    inx            ; reg X = y location of player without screen offset
-    txa
-    sbc #15
-    beq shootend
-    txa 
-    sbc #16        ; past boss
-    bpl shootend
-    jsr wait2      ; pause for a bit
-    jsr wait2
-    jsr wait2
-    jsr wait2
-    jsr wait2
-    jsr wait2 
-    jsr wait2      ; pause for a bit
-    jsr wait2
-    jsr wait2
-    jsr wait2
-    jsr wait2
-    jsr wait2     
-    lda #12         ;erase previous bullet with space
-    sta CUPYOFFSET,X
-    lda #28         ; add next bullet in line
-    sta CUPYOFFSET+1,X
-    lda #2  ;make bullet red
-    sta SPACECOLOFF+CUPYOFFSET+1,X
-    jmp bulletloop
+    ; Set CHSHOOT
+    ; 1 y<<5 x
+    lda #$82
+    ;clc
+    ;adc $0
     
-shootend
-    jsr wait2      ; pause for a bit
-    jsr wait2
-    jsr wait2
-    jsr wait2
-    jsr wait2
-    jsr wait2 
-    jsr wait2      ; pause for a bit
-    jsr wait2
-    jsr wait2
-    jsr wait2
-    jsr wait2
-    jsr wait2 
+    sta CHSHOOT
+    
+    ; Set counters
+    lda #0 
+    sta CHST1
+    sta CHST2
+    
 
-    lda #12         ;erase last bullet
-    sta $1f9c
-
-	dec BOSSLIVES
-	
     pla     ; load registers
     tay
     pla
@@ -1294,28 +1254,9 @@ boss_shoot_check
     sbc #255
     bmi bscend
     
-    jsr boss_shoot
+    ;jsr boss_shoot
     
-    ; reset for next round
-    lda #$99
-    sta TIMERCOUNT1   
-    sta TIMERCOUNT2   
-
-bscend
-    rts
-    
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; BOSS SHOOT SUBROUTINE             ;
-;-----------------------------------;
-; Actually issues bullets from boss ;   
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-boss_shoot
-    pha     ; save registers
-    txa
-    pha
-    tya
-    pha
-    
+    ; Shoot sound effect
     ; PLAY SHOOT SOUND EFFECT
     lda #$0f	; vol 15
 	sta $900e	; store in vol mem (36878)
@@ -1340,73 +1281,35 @@ bossshoottimer   ; make the notes last a little longer
     inx
     txa
     
-    ; Draw first bullet
-    lda #28
-    sta CUPYOFFSET+16
+    ; load BSHOOT
+    ;1 y<<5 x
+    lda #0
+    sta BST1
+    sta BST2
+;    lda $1
+;    asl
+;    asl
+;    asl
+;    asl
+;    asl
+    ;clc
+    ;adc #$80
+    ;clc
+    ;adc $0
+    ;clc
+    ;sbc #1
+    lda #$90
+    sta BSHOOT
     
-    lda #6
-    sta CUPYOFFSET+16+SPACECOLOFF
-    
-    ;DRAW BULLET
-    ldx #16                ; start position of drawing bullet
+    ; reset for next round
+    lda #$99
+    sta TIMERCOUNT1   
+    sta TIMERCOUNT2   
 
-    ldy $1 ;load in y coordinate
-bossbulletloop    
-    dex            
-    txa
-    clc
-    sbc #$0,Y    
-    clc
-    adc #1
-    beq bossshootend
-    jsr wait2      ; pause for a bit
-    jsr wait2
-    jsr wait2
-    jsr wait2
-    jsr wait2
-    jsr wait2
-    jsr wait2      ; pause for a bit
-    jsr wait2
-    jsr wait2
-    jsr wait2
-    jsr wait2
-    jsr wait2
-    lda #12         ;erase previous bullet with space
-    sta CUPYOFFSET+1,X
-    lda #28         ; add next bullet in line
-    sta CUPYOFFSET,X
-    lda #6  ;make bullet blue
-    sta SPACECOLOFF+CUPYOFFSET,X
-    jmp bossbulletloop
-    
-bossshootend
-    jsr wait2      ; pause for a bit
-    jsr wait2
-    jsr wait2
-    jsr wait2
-    jsr wait2
-    jsr wait2 
-    jsr wait2      ; pause for a bit
-    jsr wait2
-    jsr wait2
-    jsr wait2
-    jsr wait2
-    jsr wait2 
-
-    lda #12         ;erase last bullet
-    ldy $1
-    sta CUPYOFFSET+1,X
-
-	dec CHLIVES		; update cuphead's life when hit
-	jsr printlives
-	
-    pla     ; load registers
-    tay
-    pla
-    tax
-    pla
-    
+bscend
     rts
+    
+
 	
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Win/Dead Screen Display                  ;
@@ -1415,6 +1318,8 @@ bossshootend
 ; Returns: Nothing                         ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 diswindead
+    sei
+
     ldy #16
     lda #11
 spaceloop
@@ -1658,7 +1563,7 @@ cupxshot
     inc CHSHOOT    ; next location
        
     ; Collision resolution   
-       
+    dec BOSSLIVES
        
     ; Check if end of shot; reset bit 0 of CHSHOOT
     lda CHSHOOT
@@ -1674,7 +1579,7 @@ cupxshot
     
 crsttime    
     ; Reset timer if not at end 
-    lda #99
+    lda #$ff
     sta CHST1
     sta CHST2 
     
@@ -1757,7 +1662,7 @@ bossxshot
         
 brsttime   
     ; Reset timer if not at end 
-    lda #99
+    lda #$ff
     sta BST1
     sta BST2 
     
@@ -2022,6 +1927,3 @@ data
 
     ;12     60
     .byte #$14, #$14, #$14, #$14, #$fe, #$2, #$2, #$fe
-    
-;	.org $fffe 
-;irqvector .word timer_isr		  ; irq vector
