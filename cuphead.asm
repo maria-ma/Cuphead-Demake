@@ -1305,23 +1305,27 @@ bossshoottimer   ; make the notes last a little longer
     txa
     
     ; load BSHOOT
-    ;1 y<<5 x
+    ;1yyxxxxx
     ;lda #0
     ;sta BST1
     ;sta BST2
-;    lda $1
-;    asl
-;    asl
-;    asl
-;    asl
-;    asl
-    ;clc
-    ;adc #$80
-    ;clc
+    lda $1
+    asl
+    asl
+    asl
+    asl
+    asl
+    
+    clc
+    adc #$80
+    
+    clc
+    adc #$10
+    
     ;adc $0
     ;clc
     ;sbc #1
-    lda #$90
+    ;lda #$90
     sta BSHOOT
 
 skipshootboss    
@@ -1676,6 +1680,8 @@ bossxshot
     ; Check x 
     lda BSHOOT
     and #$1f
+    clc
+    sbc #1
     cmp $0
     bne wallchk
     
@@ -1691,9 +1697,12 @@ bossxshot
     
     lda #0       ; clear shoot bit
     sta BSHOOT
+    
+    
     lda #12     ; also erase last bullet
     ldx $0
-    sta CUPYOFFSET-1,X   
+    sta CUPYOFFSET+1,X   
+    
     jmp brsttime
     
 wallchk
