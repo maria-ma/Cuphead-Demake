@@ -58,7 +58,14 @@ CLOUD1 EQU #$5
 CLOUD2 EQU #$d
 
 
-; Could have equates for colors
+; Colors
+BLACK EQU 0
+WHITE EQU 1
+RED EQU 2
+CYAN EQU 3
+GREEN EQU 5
+BLUE EQU 6
+LTCYAN EQU 184
 
     ; target processor, tells dasm which processor we want
 	processor 6502
