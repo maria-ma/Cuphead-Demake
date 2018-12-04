@@ -1,8 +1,10 @@
 ; draw basic playfield
 ; testing drawing something meaniningful with VIC Characters
 SPACECOLOFF EQU $7800  ; difference between location in space and it's color location
-CUPYOFFSET EQU 8076
-CUPXOFFSET EQU 8054
+GROUNDOFFSET EQU 8076
+;GROUNDOFFSET EQU 8076
+CLOUDOFFSET EQU 8032
+;CLOUDOFFSET EQU 8032
 ROWDIFF EQU 22
 
 ; For drawing start screen
@@ -44,6 +46,10 @@ BSHOOT EQU $1de9
 ;BST2 EQU $1ded
 
 WORKAREA EQU $1dee
+
+; Jumping Clouds
+CLOUD1 EQU #$5
+CLOUD2 EQU #$d
 
 
 ; Could have equates for colors
@@ -225,19 +231,32 @@ jump
 ; animated jump routine
 ; doesn't go on platform
 ; doesn't animate when boss shoots (problemo)
+        ; don't jump if on cloud
+        lda $1
+        cmp #1
+        beq endloop
 
+        ; Check if under clouds
+        lda $0
+        cmp #4
+        beq jump1
+        lda $0 
+        cmp #12
+        beq jump1
+
+        ; if not under clouds, jumping animation
         ; removes previous cuphead when jump is pressed
         ldx $0         
 		lda #12					
-		sta CUPYOFFSET,X		; TODO: make a jump to the clouds
+		sta GROUNDOFFSET,X		; TODO: make a jump to the clouds
 
         ; make jumping cuphead
         lda #31
-        sta CUPXOFFSET,X
+        sta CLOUDOFFSET,X
 
         ; store color of jumping cuphead
         lda #2
-        sta CUPXOFFSET+SPACECOLOFF,X
+        sta CLOUDOFFSET+SPACECOLOFF,X
 
         ; wait a bit
         jsr wait
@@ -247,28 +266,30 @@ jump
 
         ; remove jumping cuphead
         lda #12
-        sta CUPXOFFSET,X
+        sta CLOUDOFFSET,X
 
         ; check place on screen?
-        lda 211                 ; position of cursor?
-        cmp #5,X                ; checking every 5st position, want single spot?
-        beq jump1
+        ;lda 211                 ; position of cursor?
+        ;cmp #5,X                ; checking every 5st position, want single spot?
+        ;beq jump1
 
         jmp endloop
 
-jump1
-        ldx $0
-        lda #12
-        sta CUPYOFFSET,Y
-        sta CUPXOFFSET,Y
-        jsr chplaceholder 
-        jmp endloop
+jump1   
+        lda #1
+        sta $1     ; update Y
+        ;ldx $0
+        ;lda #12
+        ;sta GROUNDOFFSET,Y
+        ;sta CLOUDOFFSET,Y
+        ;jsr chplaceholder 
+        ;jmp endloop
 
 endloop 
         ldx $0
         lda #12
-        sta CUPYOFFSET-1,X   
-        sta CUPYOFFSET+1,X          
+        sta GROUNDOFFSET-1,X   
+        sta GROUNDOFFSET+1,X          
         
         jsr draw
         jmp loop
@@ -404,7 +425,45 @@ draw
         pha 
         tya 
         pha
-
+        
+        ; Check if in clouds
+        lda $1
+        cmp #1
+        bne drawground
+        
+        ldx $0              ; Draw Cuphead
+        lda #31
+        sta CLOUDOFFSET,X
+        lda #2    ;red          
+        sta CLOUDOFFSET+SPACECOLOFF,X   ;
+        
+        lda #12             
+        sta GROUNDOFFSET,X    ; Erase Below
+        sta CLOUDOFFSET+1,X      ; Erase right
+        sta CLOUDOFFSET-1,X      ; Erase left
+        
+        jmp enddraw
+        
+drawground         ; Otherwise, draw on ground
+        ldx $0              ; Draw Cuphead
+        lda #31
+        sta GROUNDOFFSET,X
+        lda #2    ;red          
+        sta GROUNDOFFSET+SPACECOLOFF,X   ;
+        
+        lda #12             
+        sta GROUNDOFFSET+1,X      ; Erase right
+        sta GROUNDOFFSET-1,X      ; Erase left
+        
+enddraw 
+        pla     ; load registers
+        tay
+        pla
+        tax
+        pla
+        
+        rts
+drawnormal
         ldx $1
         ldy #0
         txa 
@@ -436,36 +495,32 @@ doneX   ldx $1
         cmp #$B
         bcs draw2
         jmp draw1
-enddraw 
-        pla     ; load registers
-        tay
-        pla
-        tax
-        pla
-        
-        rts
+
 
 
 draw1   
         lda #31
-        sta 8076,Y
+        sta GROUNDOFFSET,Y
         
         ; add color
         lda #2
-        sta 8076+SPACECOLOFF,Y
+        sta GROUNDOFFSET+SPACECOLOFF,Y
         
         jmp enddraw
         
 draw2  
         lda #31
-        sta 7966,Y
+        sta CLOUDOFFSET,Y
         
         ; add color
         lda #2
-        sta 7966+SPACECOLOFF,Y
+        sta CLOUDOFFSET+SPACECOLOFF,Y
         
         jmp enddraw
 
+;;;;;;;;;;;;;;;;;;;
+; Wait Subroutine ;
+;;;;;;;;;;;;;;;;;;;
 wait    
         pha     ; save registers
         txa
@@ -597,9 +652,9 @@ printboss
 
     ; Platforms
     lda #29
-    sta 8036
+    sta 8036+22
 
-    sta 8044
+    sta 8044+22
     ;sta 7994
         
     pla     ; reload x and acc
@@ -1601,7 +1656,7 @@ cupxshot
     lda CHSHOOT
     and #$1f    
     ;clc 
-    ;adc CUPYOFFSET  ; A = X + CUPYOFSET
+    ;adc GROUNDOFFSET  ; A = X + CUPYOFSET
     ;sta WORKAREA   
     
     clc
@@ -1609,13 +1664,13 @@ cupxshot
     tax
     
     lda #28   ; bullet
-    sta CUPYOFFSET,X  ; CUPYOFFSET + x -(y*22)
+    sta GROUNDOFFSET,X  ; GROUNDOFFSET + x -(y*22)
     lda #2    ;red
-    sta CUPYOFFSET+SPACECOLOFF,X
+    sta GROUNDOFFSET+SPACECOLOFF,X
     
     ; Erase previous bullet 
     lda #12
-    sta CUPYOFFSET-1,X  ; CUPYOFFSET + X -(Y*22)-1
+    sta GROUNDOFFSET-1,X  ; GROUNDOFFSET + X -(Y*22)-1
 
     inc CHSHOOT    ; next location
        
@@ -1630,7 +1685,7 @@ cupxshot
     lda #0     ; otherwise, clear shoot bit
     sta CHSHOOT
     lda #12     ; also erase last bullet
-    sta CUPYOFFSET,X
+    sta GROUNDOFFSET,X
     ; Collision resolution  - must have hit boss since he doesn't move
     dec BOSSLIVES
     
@@ -1685,7 +1740,7 @@ bossxshot
     lda BSHOOT
     and #$1f    
     ;clc 
-    ;adc CUPYOFFSET  ; A = X + CUPYOFSET
+    ;adc GROUNDOFFSET  ; A = X + CUPYOFSET
     ;sta WORKAREA   
     
     clc
@@ -1693,13 +1748,13 @@ bossxshot
     tax
     
     lda #28   ; bullet
-    sta CUPYOFFSET,X  ; CUPYOFFSET + X -(Y*22)   ;CHANGE AFTER TESTING!!!!!!
+    sta GROUNDOFFSET,X  ; GROUNDOFFSET + X -(Y*22)   ;CHANGE AFTER TESTING!!!!!!
     lda #6   ; blue
-    sta CUPYOFFSET+SPACECOLOFF,X
+    sta GROUNDOFFSET+SPACECOLOFF,X
     
     ; Erase previous bullet
     lda #12   ; space
-    sta CUPYOFFSET+1,X
+    sta GROUNDOFFSET+1,X
     
 
     
@@ -1730,7 +1785,7 @@ bossxshot
     
     lda #12     ; also erase last bullet
     ldx $0
-    sta CUPYOFFSET+1,X   
+    sta GROUNDOFFSET+1,X   
     
     jmp brsttime
     
@@ -1746,7 +1801,7 @@ wallchk
     lda #0       ; otherwise, clear shoot bit
     sta BSHOOT
     lda #12     ; also erase last bullet
-    sta CUPYOFFSET-1   ;CHANGE AFTER TESTING!!!!!!
+    sta GROUNDOFFSET-1   ;CHANGE AFTER TESTING!!!!!!
         
 brsttime   
     ; Reset timer if not at end 
