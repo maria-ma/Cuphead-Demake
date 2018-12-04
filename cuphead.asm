@@ -1828,12 +1828,12 @@ bossshoot
     tax
     
     lda #28   ; Draw bullet
-    sta CLOUDOFFSET,X  ; GROUNDOFFSET + x -(y*22)
-    lda #6    ;red
-    sta CLOUDOFFSET+SPACECOLOFF,X
+    sta CLOUDOFFSET-1,X  ; GROUNDOFFSET + x -(y*22)
+    lda #6    ;blue
+    sta CLOUDOFFSET-1+SPACECOLOFF,X
     
     lda #12     ; Erase previous bullet 
-    sta CLOUDOFFSET+1,X  ; GROUNDOFFSET + X -(Y*22)-1
+    sta CLOUDOFFSET,X  ; GROUNDOFFSET + X -(Y*22)-1
     
     jmp bossshotcol
         
@@ -1843,12 +1843,12 @@ bossxshot
     tax
     
     lda #28   ; Draw bullet
-    sta GROUNDOFFSET,X  ; GROUNDOFFSET + x -(y*22)
+    sta GROUNDOFFSET-1,X  ; GROUNDOFFSET + x -(y*22)
     lda #6    ;red
-    sta GROUNDOFFSET+SPACECOLOFF,X
+    sta GROUNDOFFSET-1+SPACECOLOFF,X
     
     lda #12     ; Erase previous bullet 
-    sta GROUNDOFFSET+1,X  ; GROUNDOFFSET + X -(Y*22)-1
+    sta GROUNDOFFSET,X  ; GROUNDOFFSET + X -(Y*22)-1
 
     
 bossshotcol    
@@ -1890,12 +1890,11 @@ bbccollision
     
     lda #0       ; clear shoot bit
     sta BSHOOT
-    
-    
+     
     lda #12     ; also erase last bullet
     ldx $0
-    sta GROUNDOFFSET+2,X  
-    sta CLOUDOFFSET+2,X     
+    sta GROUNDOFFSET+1,X  
+    sta CLOUDOFFSET+1,X     
     
     jmp brsttime
     
