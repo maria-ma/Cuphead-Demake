@@ -48,7 +48,10 @@ BSHOOT EQU $1de9
 BST1 EQU $1dec  ; boss bullet timer
 BST2 EQU $1ded
 
-WORKAREA EQU $1dee
+;WORKAREA EQU $1dee
+
+; Boss Shield Timer
+BOSSSHIELDTIMER EQU $1dee
 
 ; Jumping Clouds
 CLOUD1 EQU #$5
@@ -1701,23 +1704,6 @@ distombstone
     pla
 
     rts
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ;
-; Placeholder Cuphead for jump  ;
-;-------------------------------;
-; displays cuphead when on jump ;
-; Args: none                    ;
-; Returns: nothing              ;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-chplaceholder   
-    ; placeholder cuphead
-    lda #31
-    sta 8014
-    lda #2      ; store color of cuphead
-    sta 8014+SPACECOLOFF
-    rts   
-    
     
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; CUPHEAD SHOOT SUBROUTINE            ;
@@ -1808,6 +1794,7 @@ pastboss
     sta CHSHOOT
 
     ; Collision resolution  - must have hit boss since he doesn't move
+    
     dec BOSSLIVES
     
     inc SCORE
