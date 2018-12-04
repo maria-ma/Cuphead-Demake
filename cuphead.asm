@@ -1405,13 +1405,13 @@ bossshoottimer   ; make the notes last a little longer
     cmp #1
     bne bossgshoot
     
-    lda #$af   
+    lda #$f0   
     sta BSHOOT
     
     jmp skipshootboss
     
 bossgshoot
-    lda #$8f    
+    lda #$d0    
     sta BSHOOT
     
 skipshootboss    
@@ -1749,6 +1749,7 @@ chshoot
     lda CHSHOOT
     and #$40
     beq erasechshot1
+    
     lda CHSHOOT
     and #$bf ; otherwise, clear first shot
     sta CHSHOOT
@@ -1774,8 +1775,9 @@ cupxshot
     lda CHSHOOT
     and #$40
     beq erasechshot2
+    
     lda CHSHOOT
-    and #$bf ; otherwise, clear first shot
+    and #$bf ; otherwise, clear first shot bit
     sta CHSHOOT
     
     jmp cupshotcol
@@ -1852,6 +1854,17 @@ bossshoot
     lda #6    ;blue
     sta CLOUDOFFSET-1+SPACECOLOFF,X
     
+    ; Check if first shot
+    lda BSHOOT
+    and #$40
+    beq erasebshot1
+    
+    lda BSHOOT
+    and #$bf   ; clear as no longer first shot
+    sta BSHOOT
+    
+    jmp bossshotcol
+erasebshot1    
     lda #12     ; Erase previous bullet 
     sta CLOUDOFFSET,X  ; GROUNDOFFSET + X -(Y*22)-1
     
@@ -1867,6 +1880,18 @@ bossxshot
     lda #6    ;red
     sta GROUNDOFFSET-1+SPACECOLOFF,X
     
+    ; Check if first shot
+    lda BSHOOT
+    and #$40
+    beq erasebshot2
+    
+    lda BSHOOT
+    and #$bf ; otherwise, clear first shot bit
+    sta BSHOOT
+        
+    jmp bossshotcol
+
+erasebshot2    
     lda #12     ; Erase previous bullet 
     sta GROUNDOFFSET,X  ; GROUNDOFFSET + X -(Y*22)-1
 
