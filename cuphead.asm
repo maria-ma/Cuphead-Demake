@@ -42,7 +42,7 @@ WORDSTART EQU MSGSTART +44+6
 CHSHOOT EQU $1de8   ; bit0 =y/n shoot; bit1=first shot bit2=yvalue of shot; rest: position along x axis
 BSHOOT EQU $1de9
 
-;CHST1 EQU $1dea  ; cuphead bullet timer
+CHST1 EQU $1dea  ; cuphead bullet timer
 ;CHST2 EQU $1deb
 
 BST1 EQU $1dec  ; boss bullet timer
@@ -58,14 +58,7 @@ CLOUD1 EQU #$5
 CLOUD2 EQU #$d
 
 
-; Colors
-BLACK EQU 0
-WHITE EQU 1
-RED EQU 2
-CYAN EQU 3
-GREEN EQU 5
-BLUE EQU 6
-LTCYAN EQU 184
+; Could have equates for colors
 
     ; target processor, tells dasm which processor we want
 	processor 6502
@@ -169,7 +162,7 @@ continue
     sta $0315 
           
     lda #0 
-    ;sta CHST1
+    sta CHST1
     ;sta CHST2
     sta BSHOOT
     sta CHSHOOT
@@ -384,9 +377,15 @@ shoot
     tya 
     pha
     
-    lda CHSHOOT
+    lda CHSHOOT     ; check if not currently shooting
     bne skipshoot
     
+    lda CHST1
+    beq chtimeshoot   ; if timer out, shoot; otherwise, dec timer
+    
+    jmp skipshoot
+
+chtimeshoot    
     ; PLAY SHOOT SOUND EFFECT
     lda #$0f	; vol 15
 	sta $900e	; store in vol mem (36878)
@@ -408,7 +407,11 @@ shoottimer   ; make the notes last a little longer
     sbc $7167   ; check if at 128
     bne shootloop
     inx
-    txa    
+    txa
+    
+    ; Set CHST timer
+    lda #32
+    sta CHST1
     
     ; Set CHSHOOT
     ; Should be 1yyxxxxx
@@ -1521,9 +1524,7 @@ redspaceloop
     jmp redspaceloop
 
     
-infinite    
-    jmp infinite
-    
+    jmp infinite   
     
 deadword 
     ; Lose Sound effect
@@ -1550,7 +1551,7 @@ deadword
     lda #0
 blackspaceloop
     cpy #0
-    beq selectwait   
+    beq infinite  
     
     sta MSGSTART+SPACECOLOFF,Y  ; Make red here
     sta MSGSTART+SPACECOLOFF+176,Y  
@@ -1564,18 +1565,19 @@ blackspaceloop
     dey
     jmp blackspaceloop
   
-    
-selectwait  
-    jsr wait
-    jsr wait
-    lda 197                                 ; current key pressed
+infinite    
+    jmp infinite   
+;selectwait  
+;    jsr wait
+;    jsr wait
+;    lda 197                                 ; current key pressed
 
-    cmp #32                                 ; space		
-    beq backtobegin
+;    cmp #32                                 ; space		
+;    beq backtobegin
 
-    jmp selectwait 
-backtobegin
-    jsr main
+;    jmp selectwait 
+;backtobegin
+;    jsr main
 
     rts
     
@@ -1727,9 +1729,14 @@ dis_boss_shield
     sta CLOUDOFFSET+16
     sta CLOUDOFFSET-ROWDIFF+16
     
+    lda #1   ; color them white
+    sta GROUNDOFFSET+16+SPACECOLOFF
+    sta GROUNDOFFSET-ROWDIFF+16+SPACECOLOFF
+    sta CLOUDOFFSET+16+SPACECOLOFF
+    sta CLOUDOFFSET-ROWDIFF+16+SPACECOLOFF
+    
     ; Set indicating shield is up
-    lda BOSSSHIELDTIMER
-    ora #$80
+    lda #$80
     sta BOSSSHIELDTIMER
     
     pla
@@ -1831,9 +1838,17 @@ pastboss
     and #$80
     beq declives  ; not set
     
-    lda BOSSSHIELDTIMER
-    and #$7f
+    lda $0        ; get rid of shield and reset timer
+    clc
+    adc #$40
     sta BOSSSHIELDTIMER
+    ;clc 
+    
+    ;lda BOSSSHIELDTIMER  
+    ;and #$7f
+    ;sta BOSSSHIELDTIMER
+    
+    ;adc 
     
     jmp crsttime
 declives
@@ -2028,10 +2043,16 @@ timer_isr
     sta $9118
     
     ;beq timer_isr
+    ; Decrement CHST if not 0
+    lda CHST1
+    beq isrchshoot
+    
+    dec CHST1            
         
     ;;;;;;;;;;;;;;;;;;
     ; Cuphead Shoot  ;
     ;;;;;;;;;;;;;;;;;;
+isrchshoot
     ; Create a function that is run if yes; it will handle the x and y of the bullet
     lda CHSHOOT
     and #$80
@@ -2092,20 +2113,20 @@ musicnote
     ; BOSS SHIELD ;
     ;;;;;;;;;;;;;;;
     ; Check if shield is up
-    ;lda BOSSSHIELDTIMER
-    ;and #$80
-    ;bne setinterruptimer  ; if shield is up, don't do anything
+    lda BOSSSHIELDTIMER
+    and #$80
+    bne setinterruptimer  ; if shield is up, don't do anything
     
     ; Check if timer is at 0
-    ;lda BOSSSHIELDTIMER     ; shield not up so don't have to clear highest bit
-    ;bne decshieldtimer
+    lda BOSSSHIELDTIMER     ; shield not up so don't have to clear highest bit
+    bne decshieldtimer
     
-    ;jsr dis_boss_shield
+    jsr dis_boss_shield
     
-    ;jmp setinterruptimer
+    jmp setinterruptimer
     ; If not, decrement timer
-;decshieldtimer   
-    ;dec BOSSSHIELDTIMER
+decshieldtimer   
+    dec BOSSSHIELDTIMER
     
     ;;;;;;;;;;;;;;;;;;
     ; Boss Movement? ;
