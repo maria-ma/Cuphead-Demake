@@ -39,14 +39,14 @@ CUPMSGSTART EQU MSGSTART+66+2
 WORDSTART EQU MSGSTART +44+6
 
 ; Interrupt Equates
-CHSHOOT EQU $1de8   ; bit0 =y/n shoot; bit1 and 2=yvalue of shot; rest: position along x axis
+CHSHOOT EQU $1de8   ; bit0 =y/n shoot; bit1=first shot bit2=yvalue of shot; rest: position along x axis
 BSHOOT EQU $1de9
 
 ;CHST1 EQU $1dea  ; cuphead bullet timer
 ;CHST2 EQU $1deb
 
-;BST1 EQU $1dec  ; boss bullet timer
-;BST2 EQU $1ded
+BST1 EQU $1dec  ; boss bullet timer
+BST2 EQU $1ded
 
 WORKAREA EQU $1dee
 
@@ -163,8 +163,8 @@ continue
     ;sta CHST2
     sta BSHOOT
     sta CHSHOOT
-    ;sta BST1
-    ;sta BST2
+    sta BST1
+    sta BST2
     
     ; set timer 2 to max
     lda #$ff     
@@ -406,7 +406,7 @@ shoottimer   ; make the notes last a little longer
     cmp #1
     bne chgshoot
 
-    lda #$a0
+    lda #$e0
     
     clc
     adc $0
@@ -415,8 +415,8 @@ shoottimer   ; make the notes last a little longer
     cpx #15
     bpl skipthreec
     
-    clc
-    adc #1
+    ;clc
+    ;adc #1
 
 skipthreec  
     clc
@@ -425,7 +425,7 @@ skipthreec
     
     jmp skipshoot
 chgshoot   ; cuphead shooting on ground 
-    lda #$80
+    lda #$c0
     
     clc
     adc $0
@@ -434,8 +434,8 @@ chgshoot   ; cuphead shooting on ground
     cpx #15
     bpl skipthreeg
     
-    clc
-    adc #1
+    ;clc
+    ;adc #1
 
 skipthreeg  
     clc
@@ -1398,9 +1398,9 @@ bossshoottimer   ; make the notes last a little longer
     
     ; load BSHOOT
     ;1yyxxxxx
-    ;lda #0
-    ;sta BST1
-    ;sta BST2
+    lda #0
+    sta BST1
+    sta BST2
     lda $1
     cmp #1
     bne bossgshoot
@@ -1732,7 +1732,7 @@ chshoot
     ;Shooting Position =  X -(Y*22)
     ; Y position
     lda CHSHOOT
-    and #$60
+    and #$20
     beq cupxshot        ; no y offset
     
     ; Cloud Shoot
@@ -1745,6 +1745,16 @@ chshoot
     lda #2    ;red
     sta CLOUDOFFSET+SPACECOLOFF,X
     
+    ; Check if first shot
+    lda CHSHOOT
+    and #$40
+    beq erasechshot1
+    lda CHSHOOT
+    and #$bf ; otherwise, clear first shot
+    sta CHSHOOT
+    
+    jmp cupshotcol
+erasechshot1    
     lda #12     ; Erase previous bullet 
     sta CLOUDOFFSET-1,X  ; GROUNDOFFSET + X -(Y*22)-1
     
@@ -1760,6 +1770,16 @@ cupxshot
     lda #2    ;red
     sta GROUNDOFFSET+SPACECOLOFF,X
     
+    ; Check if first shot
+    lda CHSHOOT
+    and #$40
+    beq erasechshot2
+    lda CHSHOOT
+    and #$bf ; otherwise, clear first shot
+    sta CHSHOOT
+    
+    jmp cupshotcol
+erasechshot2    
     lda #12     ; Erase previous bullet 
     sta GROUNDOFFSET-1,X  ; GROUNDOFFSET + X -(Y*22)-1
 
@@ -1818,7 +1838,7 @@ bossshoot
     ;Shooting Position =  X - (Y*22)
     ; Y position
     lda BSHOOT
-    and #$60
+    and #$20
     ;sta WORKAREA
     beq bossxshot        ; no y offset
     
@@ -1868,12 +1888,12 @@ bossshotcol
     beq cloudchk
     ; Ground check - should be 0
     lda BSHOOT
-    and #$60
+    and #$20
     bne wallchk
     jmp bbccollision
 cloudchk    
     lda BSHOOT
-    and #$60
+    and #$20
     beq wallchk
     
     ;clc
@@ -1910,14 +1930,14 @@ wallchk
     lda #0       ; otherwise, clear shoot bit
     sta BSHOOT
     lda #12     ; also erase last bullet
-    sta GROUNDOFFSET+1   ;CHANGE AFTER TESTING!!!!!!
-    sta CLOUDOFFSET+1    
+    sta GROUNDOFFSET   
+    sta CLOUDOFFSET    
 brsttime   
     ; Reset timer if not at end 
-    ;lda #$3
-    ;sta BST1
-    ;lda #0
-    ;sta BST2 
+    lda #$3
+    sta BST1
+    lda #0
+    sta BST2 
     
     pla
     tax
@@ -1983,19 +2003,19 @@ chkboss
     beq musicnote   ; not shooting, check if boss is shooting
     
     ; Check if timers are at 0
-    ;lda BST1
-    ;beq bst2chk
-    ;dec BST1
-    ;jmp musicnote
+    lda BST1
+    beq bst2chk
+    dec BST1
+    jmp musicnote
 
-;bst2chk
-    ;lda BST2
-    ;beq bisshoot
-    ;dec BST2
-    ;jmp musicnote
+bst2chk
+    lda BST2
+    beq bisshoot
+    dec BST2
+    jmp musicnote
     
     
-;bisshoot 
+bisshoot 
     jsr bossshoot
 
     ; Optional: fancy shooting like a shotgun spread or falling from the sky or ...
