@@ -1402,24 +1402,18 @@ bossshoottimer   ; make the notes last a little longer
     ;sta BST1
     ;sta BST2
     lda $1
-    asl
-    asl
-    asl
-    asl
-    asl
+    cmp #1
+    bne bossgshoot
     
-    clc
-    adc #$80
-    
-    clc
-    adc #$10
-    
-    ;adc $0
-    ;clc
-    ;sbc #1
-    ;lda #$90
+    lda #$af   
     sta BSHOOT
-
+    
+    jmp skipshootboss
+    
+bossgshoot
+    lda #$8f    
+    sta BSHOOT
+    
 skipshootboss    
     ; reset for next round
     lda #$99
@@ -1828,45 +1822,36 @@ bossshoot
     ;sta WORKAREA
     beq bossxshot        ; no y offset
     
-    cmp $20         ; pos 1
-    bne bynext
-    lda #22
-    jmp bossxshot
-
-bynext    
-    cmp $40         ; pos
-    bne bynextxt
-    lda #44
-    jmp bossxshot
-
-bynextxt    
-    lda #66
-        
-bossxshot  
-    sta WORKAREA
-    ; X position of shot   
+    ;Cloud Shoot
     lda BSHOOT
-    and #$1f    
-    ;clc 
-    ;adc GROUNDOFFSET  ; A = X + CUPYOFSET
-    ;sta WORKAREA   
-    
-    clc
-    sbc WORKAREA
+    and #$1f
     tax
     
-    lda #28   ; bullet
-    sta GROUNDOFFSET,X  ; GROUNDOFFSET + X -(Y*22)   ;CHANGE AFTER TESTING!!!!!!
-    lda #6   ; blue
+    lda #28   ; Draw bullet
+    sta CLOUDOFFSET,X  ; GROUNDOFFSET + x -(y*22)
+    lda #6    ;red
+    sta CLOUDOFFSET+SPACECOLOFF,X
+    
+    lda #12     ; Erase previous bullet 
+    sta CLOUDOFFSET+1,X  ; GROUNDOFFSET + X -(Y*22)-1
+    
+    jmp bossshotcol
+        
+bossxshot  
+    lda BSHOOT
+    and #$1f 
+    tax
+    
+    lda #28   ; Draw bullet
+    sta GROUNDOFFSET,X  ; GROUNDOFFSET + x -(y*22)
+    lda #6    ;red
     sta GROUNDOFFSET+SPACECOLOFF,X
     
-    ; Erase previous bullet
-    lda #12   ; space
-    sta GROUNDOFFSET+1,X
-    
+    lda #12     ; Erase previous bullet 
+    sta GROUNDOFFSET+1,X  ; GROUNDOFFSET + X -(Y*22)-1
 
     
-    
+bossshotcol    
     ; Collision resolution first here
     ; if location of bullet == cuphead's location, decrease cuphead's lives
     ; Check x 
@@ -1878,11 +1863,27 @@ bossxshot
     bne wallchk
     
     ;Check y
+    lda $1
+    cmp #1
+    beq cloudchk
+    ; Ground check - should be 0
     lda BSHOOT
     and #$60
-    cmp $1
     bne wallchk
+    jmp bbccollision
+cloudchk    
+    lda BSHOOT
+    and #$60
+    beq wallchk
     
+    ;clc
+    ;sbc 
+    ;lda BSHOOT
+    ;and #$60
+    ;cmp $1
+    ;bne wallchk
+
+bbccollision    
     dec CHLIVES		; update cuphead's life when hit
 	jsr printlives
     ; Also reset at this point and stop shooting
@@ -1893,7 +1894,8 @@ bossxshot
     
     lda #12     ; also erase last bullet
     ldx $0
-    sta GROUNDOFFSET+1,X   
+    sta GROUNDOFFSET+2,X  
+    sta CLOUDOFFSET+2,X     
     
     jmp brsttime
     
@@ -1909,8 +1911,8 @@ wallchk
     lda #0       ; otherwise, clear shoot bit
     sta BSHOOT
     lda #12     ; also erase last bullet
-    sta GROUNDOFFSET-1   ;CHANGE AFTER TESTING!!!!!!
-        
+    sta GROUNDOFFSET+1   ;CHANGE AFTER TESTING!!!!!!
+    sta CLOUDOFFSET+1    
 brsttime   
     ; Reset timer if not at end 
     ;lda #$3
