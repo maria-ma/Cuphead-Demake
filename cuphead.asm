@@ -224,8 +224,9 @@ loop    ; Check if boss shoots
         beq jump                                ; up
         ; check if pressed shoot button
         cmp #32                                 ; space		
-        beq shoot
-        jmp loop
+        bne loop
+        jsr shoot
+        ;jmp 
         
 jump
 ; animated jump routine
@@ -299,7 +300,15 @@ endloop
 ; assume down is not an option
 ; to do: fix up so it "jumps?"
 
-left    ldx $0
+left    ; Check if in the clouds - have to fall if so
+        lda $1
+        cmp #1
+        bne leftnormal
+        lda #0
+        sta $1
+
+leftnormal
+        ldx $0
         dex                                     ; move left
         txa
         cmp #$ff                                ; bounds
@@ -307,7 +316,15 @@ left    ldx $0
         stx $0
         jmp endloop
 
-right   ldx $0
+right   ; Check if in the clouds - have to fall if so
+        lda $1
+        cmp #1
+        bne rightnormal
+        lda #0
+        sta $1
+
+rightnormal
+        ldx $0
         inx                     ; move right
         txa
         cmp #$10
@@ -322,8 +339,6 @@ right   ldx $0
 ; to see if it should transition to its second stage;
 ; or if it has died yet                             ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-		
 boss_life_check
 	lda BOSSLIVES
 	cmp BOSSHALF
@@ -451,7 +466,9 @@ drawground         ; Otherwise, draw on ground
         lda #2    ;red          
         sta GROUNDOFFSET+SPACECOLOFF,X   ;
         
-        lda #12             
+        lda #12
+        sta CLOUDOFFSET+1,X      ; Fall off left
+        sta CLOUDOFFSET-1,X      ; fall off right    
         sta GROUNDOFFSET+1,X      ; Erase right
         sta GROUNDOFFSET-1,X      ; Erase left
         
