@@ -34,6 +34,9 @@ end
     seg
     org $1234
 code 
+    lda #255          ; change where it gets its characters from
+    sta $9005
+
     ; set up timer and interrupts
     sei
     
@@ -46,16 +49,16 @@ code
     sta $911e
     
     ; set timer 2 7000 = $1b58
-    lda #$ff    ; 2s 
+    lda #$ff     
     sta $9119
-    lda #$ff     ; 2s 
+    lda #$ff     
     sta $9118  
     
-    ;$1b58 - location of irq
-    lda #$58
+    ;$1b94 - location of irq
+    lda #<timer_isr
     sta $0314
     
-    lda #$1b
+    lda #>timer_isr
     sta $0315 
     
     lda #$82
@@ -80,45 +83,18 @@ wait
     jmp wait
 
     rts
-
-
     
-    org $1b58
-timer_isr
+    
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; CUPHEAD SHOOT SUBROUTINE            ;
+;-------------------------------------;
+; Continues drawing bullets if needed ;   
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+chshoot
     pha
-
-    lda $911d   ; check interupt flags
-    and #$20
-    ;beq return
+    txa
+    pha
     
-    lda $9118    ; read from low order to reset
-    lda #00
-    sta $9119
-    
-    ;beq timer_isr
-        
-    ;;;;;;;;;;;;;;;;;;
-    ; Cuphead Shoot  ;
-    ;;;;;;;;;;;;;;;;;;
-    ; Create a function that is run if yes; it will handle the x and y of the bullet
-    lda CHSHOOT
-    and #$80
-    
-    beq chkboss   ; not shooting, check if boss is shooting
-    
-    ; Check if CHST time is at 0
-    lda CHST1
-    beq chst2chk  ; if equal, check next timer
-    dec CHST1     ; if not equal, decrement timer and just move on  
-    jmp chkboss
-    
-chst2chk    
-    lda CHST2
-    beq cisshoot  ; if 0, good to shoot
-    dec CHST2     ; if not equal, decrement timer and just move on  
-    jmp chkboss    
-    
-cisshoot
     ;Shooting Position =  X -(Y*22)
     ; Y position
     lda CHSHOOT
@@ -185,32 +161,22 @@ crsttime
     sta CHST1
     sta CHST2 
     
+    pla
+    tax
+    pla
     
-    
-    ;;;;;;;;;;;;;;;
-    ; Boss Shoot  ;
-    ;;;;;;;;;;;;;;;
-chkboss    
-    ; Create a function that runs if yes (probably the boss check one from previous except it won't loop until the bullet is done, just moves it one space
-    ; Create a function that is run if yes; it will handle the x and y of the bullet
-    lda BSHOOT
-    and #$80
-    
-    beq musicnote   ; not shooting, check if boss is shooting
-    
-    ; Check if timers are at 0
-    lda BST1
-    beq bst2chk
-    dec BST1
-    jmp musicnote
+    rts
 
-bst2chk
-    lda BST2
-    beq bisshoot
-    dec BST2
-    jmp musicnote
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; BOSS SHOOT SUBROUTINE             ;
+;-----------------------------------;
+; Actually issues bullets from boss ;   
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+bossshoot
+    pha
+    txa
+    pha
     
-bisshoot    
     ;Shooting Position =  X - (Y*22)
     ; Y position
     lda BSHOOT
@@ -246,19 +212,20 @@ bossxshot
     tax
     
     lda #28   ; bullet
-    sta CUPYOFFSET+22,X  ; CUPYOFFSET + X -(Y*22)   ;CHANGE AFTER TESTING!!!!!!
+    sta CUPYOFFSET,X  ; CUPYOFFSET + X -(Y*22)   ;CHANGE AFTER TESTING!!!!!!
     lda #6   ; blue
-    sta CUPYOFFSET+22+SPACECOLOFF,X
+    sta CUPYOFFSET+SPACECOLOFF,X
     
     ; Erase previous bullet
     lda #12   ; space
-    sta CUPYOFFSET+22+1,X
+    sta CUPYOFFSET+1,X
     
 
     dec BSHOOT    ; next location
     
     ; Collision resolution first here
-    
+    ;dec CHLIVES		; update cuphead's life when hit
+	;jsr printlives
     
     ; Otherwise, check if wall reached Check if end of shot; reset bit 0 of BSHOOT   
     lda BSHOOT
@@ -269,20 +236,91 @@ bossxshot
     lda #0       ; otherwise, clear shoot bit
     sta BSHOOT
     lda #12     ; also erase last bullet
-    sta CUPYOFFSET+22,X   ;CHANGE AFTER TESTING!!!!!!
+    sta CUPYOFFSET,X   ;CHANGE AFTER TESTING!!!!!!
         
 brsttime   
     ; Reset timer if not at end 
     lda #99
     sta BST1
     sta BST2 
+    
+    pla
+    tax
+    pla
+   
+    rts
 
+
+timer_isr
+    pha
+
+    lda $911d   ; check interupt flags
+    and #$20
+    
+    
+    beq return
+    
+    lda $9118    ; read from low order to reset
+    lda $9119
+    lda #00
+    sta $9119
+    sta $9118
+    
+    ;beq timer_isr
+        
+    ;;;;;;;;;;;;;;;;;;
+    ; Cuphead Shoot  ;
+    ;;;;;;;;;;;;;;;;;;
+    ; Create a function that is run if yes; it will handle the x and y of the bullet
+    lda CHSHOOT
+    and #$80
+    
+    beq chkboss   ; not shooting, check if boss is shooting
+
+    ; Check if CHST time is at 0
+    lda CHST1
+    beq chst2chk  ; if equal, check next timer
+    dec CHST1     ; if not equal, decrement timer and just move on  
+    jmp chkboss
+    
+chst2chk    
+    lda CHST2
+    beq cisshoot  ; if 0, good to shoot
+    dec CHST2     ; if not equal, decrement timer and just move on  
+    jmp chkboss    
+ 
+cisshoot 
+    jsr chshoot
+    
+    ;;;;;;;;;;;;;;;
+    ; Boss Shoot  ;
+    ;;;;;;;;;;;;;;;
+chkboss    
+    ; Create a function that runs if yes (probably the boss check one from previous except it won't loop until the bullet is done, just moves it one space
+    ; Create a function that is run if yes; it will handle the x and y of the bullet
+    lda BSHOOT
+    and #$80
+    
+    beq musicnote   ; not shooting, check if boss is shooting
+    
+    ; Check if timers are at 0
+    lda BST1
+    beq bst2chk
+    dec BST1
+    jmp musicnote
+
+bst2chk
+    lda BST2
+    beq bisshoot
+    dec BST2
+    jmp musicnote
+    
+    
+bisshoot 
+    jsr bossshoot
 
     ; Optional: fancy shooting like a shotgun spread or falling from the sky or ...
-    
-   
-    
-    
+
     ;;;;;;;;;;
     ; Music? ;
     ;;;;;;;;;;
@@ -297,13 +335,7 @@ musicnote
     ; Should the boss change positions?
     
     ; Collision resolution
-    
-    
-    
-    
-    
-    
-    
+
     ; set timer; 65535 ms
     lda #$ff     
     sta $9119
@@ -317,6 +349,164 @@ musicnote
     sta $9118        
 
 return  
-
     pla
-    jmp  $fead
+    ;sei
+    ;cli
+    ;jmp  $fead
+    ;jmp $eabf
+    rti
+    
+
+;;;;;;;;;;;;;;;;;;;;;;;;;
+; Character Information ;
+;;;;;;;;;;;;;;;;;;;;;;;;;    
+    org $1c00  ;64 characters
+data
+    ;;;;; Cuphead Logo ;;;;;
+    ; Char0
+    .byte #30,#255,#255,#231,#15,#127,#255,#207
+    ; Char1
+    .byte #207,#111,#127,#31,#0,#7,#15,#29
+    ; Char 2
+    .byte #25,#31,#15,#15,#3,#1,#1,#0
+    ; Char3
+    .byte #0,#6,#15,#15,#0,#0,#0,#0 
+    ; Char4
+    .byte #0,#0,#0,#0,#255,#255,#255,#255
+    ; Char5
+    .byte #255,#255,#255,#254,#252,#255,#255,#254     
+    ; Char6,
+    .byte #254,#254,#255,#255,#255,#239,#239,#198
+    ; Char7
+    .byte #198,#198,#199,#199,#0,#0,#0,#0    
+    ; Char8
+    .byte #0,#0,#0,#0,#192,#192,#192,#192
+    ; Char9
+    .byte #192,#128,#8,#8,#31,#252,#252,#0
+    ; Char10
+    .byte #0,#192,#224,#224,#0,#0,#0,#0
+        
+    ; Char 11 - Block
+    .byte #255,#255,#255,#255,#255,#255,#255,#255
+    
+    ; Char 12 - space
+    .byte #0,#0,#0,#0,#0,#0,#0,#0
+
+    ; Char 13 = Letter P
+    .byte #$0,#$7c,#$42,#$42,#$7c,#$40,#$40,#$40
+    
+    ; Char 14 = Letter L
+    .byte #$0,#$40,#$40,#$40,#$40,#$40,#$40,#$7e
+    
+    ; Char 15 = Letter A
+    .byte #$0,#$18,#$24,#$42,#$7e,#$42,#$42,#$42
+    
+    ; Char 16 = Letter Y
+    .byte #$0,#$22,#$22,#$22,#$1c,#$8,#$8,#$8
+    
+    ; Char 17 = Letter C
+    .byte #$0,#$1c,#$22,#$40,#$40,#$40,#$22,#$1c
+    
+    ; Char 18 = Letter R
+    .byte #$0,#$7c,#$42,#$42,#$7c,#$48,#$44,#$42
+    
+    ; Char 19 = Letter E
+    .byte #$0,#$7e,#$40,#$40,#$7c,#$40,#$40,#$7e
+    
+    ;Char 20 = Letter D
+    .byte #$0,#$78,#$24,#$22,#$22,#$22,#$24,#$78
+
+    ; Char 21 - Letter I
+    .byte #$0,#$3e,#$8,#$8,#$8,#$8,#$8,#$3e
+
+    ; Char 22 = Letter T
+    .byte #$0,#$3e,#$8,#$8,#$8,#$8,#$8,#$8
+    
+    ; Char 23 = Letter S
+    .byte #$0,#$3c,#$42,#$40,#$3c,#$2,#$42,#$3c
+    
+    ; Char 24 - Letter N
+    .byte #$0,#$42,#$62,#$52,#$4a,#$46,#$42,#$42
+
+    ; Char 25 - Letter M
+    .byte #$0, #$41, #$63, #$55, #$49, #$41, #$41, #$41    
+    
+    ; Char 26 = Arrow Char
+    .byte #$0,#$30,#$18,#$c,#$6,#$c,#$18,#$30
+    
+    ; Char 27 = Heart
+    .byte #$0, #$36, #$7f, #$7f, #$7f, #$3e, #$1c, #$8 
+    
+    ; Char 28 = Bullet
+    .byte #$0, #$0, #$0, #$7e, #$0, #$0, #$0, #$0
+    
+    ; Char 29 = Platform
+    .byte #$ff, #$ff, #$7e, #$3c, #$0, #$0, #$0, #$0 
+    
+    ; Char 30 = Grass
+    .byte #$aa, #$ff, #$ff, #$ff, #$ff, #$ff, #$ff, #$ff 
+    
+    ; Char 31 = Cuphead 1
+    .byte #$e0, #$7e, #$42, #$42, #$24, #$7e, #$3c, #$24 
+    
+    ; Char 32 = Cuphead 2; not used right now
+    .byte #0,#0,#0,#0,#0,#0,#0,#0
+    
+    ; Char 33 to 48 = Small Boss
+    .byte #$0, #$0, #$0, #$0, #$0, #$0, #$0, #$1 ;33
+    .byte #$0, #$0, #$0, #$3, #$1c, #$60, #$80, #$0 ;34
+    .byte #$0, #$0, #$0, #$f8, #$7, #$0, #$0, #$0 ;35
+    .byte #$0, #$0, #$0, #$0, #$0, #$c0, #$20, #$10 ;36
+
+    .byte #$2, #$4, #$4, #$8, #$8, #$8, #$10, #$10 ;37
+    .byte #$0, #$0, #$0, #$0, #$30, #$10, #$10, #$10 ;38
+    .byte #$0, #$0, #$0, #$0, #$6, #$2, #$2, #$2 ;39
+    .byte #$8, #$4, #$4, #$2, #$2, #$2, #$1, #$1 ;40
+
+    .byte #$10, #$10, #$10, #$10, #$10, #$8, #$8, #$8  ;41
+    .byte #$30, #$0, #$7, #$7, #$0, #$0, #$0, #$2 ;42
+    .byte #$6, #$0, #$80, #$80, #$0, #$0, #$1, #$2 ;43
+    .byte #$1, #$1, #$1, #$1, #$1, #$2, #$2, #$2 ;44
+    
+    .byte #$4, #$4, #$2, #$1, #$0, #$0, #$0, #$0 ;45
+    .byte #$1, #$0, #$0, #$0, #$80, #$60, #$1c, #$3 ;46
+    .byte #$fc, #$0, #$0, #$0, #$0, #$0, #$7, #$f8 ;47
+    .byte #$4, #$4, #$8, #$10, #$20, #$c0, #$0, #$0 ;48
+    
+    ; Char 49 to 69 = Tombstone
+    ;1
+    .byte #$0, #$0, #$0, #$0, #$0, #$3, #$4, #$9
+
+    ;2      50
+    .byte #$10, #$38, #$10, #$10, #$fe, #$1, #$7c, #$83
+
+    ;3
+    .byte #$0, #$0, #$0, #$0, #$0, #$80, #$40, #$20
+
+    ;4
+    .byte #$12, #$24, #$28, #$49, #$52, #$52, #$52, #$52
+
+    ;5
+    .byte #$0, #$7c, #$c6, #$29, #$c6, #$42, #$d6, #$0
+
+    ;6
+    .byte #$90, #$48, #$28, #$24, #$94, #$94, #$94, #$94
+
+    ;7      55
+    .byte #$52, #$51, #$50, #$50, #$50, #$57, #$54, #$57
+
+    ;8
+    .byte #$38, #$45, #$82, #$7c, #$0, #$bb, #$92, #$93
+
+    ;9
+    .byte #$94, #$14, #$14, #$14, #$14, #$d4, #$54, #$d4
+
+    ;10
+    .byte #$56, #$55, #$54, #$50, #$ff, #$80, #$80, #$ff
+
+    ;11
+    .byte #$12, #$12, #$ba, #$0, #$ff, #$0, #$0, #$ff
+
+    ;12     60
+    .byte #$14, #$14, #$14, #$14, #$fe, #$2, #$2, #$fe
+    
