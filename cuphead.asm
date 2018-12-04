@@ -334,7 +334,7 @@ rightnormal
         ldx $0
         inx                     ; move right
         txa
-        cmp #$10
+        cmp #$e
         beq endloop
         stx $0
         jmp endloop
@@ -403,31 +403,44 @@ shoottimer   ; make the notes last a little longer
     ; Set CHSHOOT
     ; Should be 1yyxxxxx
     lda $1
-    asl
-    asl
-    asl
-    asl
-    asl
-    
-    clc
-    adc #$80
+    cmp #1
+    bne chgshoot
+
+    lda #$a0
     
     clc
     adc $0
     
-    clc
-    adc #3
-    ; 1 y<<5 x
-    ;lda #$82
-    ;clc
-    ;adc $0
+    ldx $0
+    cpx #15
+    bpl skipthreec
     
+    clc
+    adc #1
+
+skipthreec  
+    clc
+    adc #1
     sta CHSHOOT
     
-    ; Set counters
-    ;lda #0 
-    ;sta CHST1
-    ;sta CHST2
+    jmp skipshoot
+chgshoot   ; cuphead shooting on ground 
+    lda #$80
+    
+    clc
+    adc $0
+    
+    ldx $0
+    cpx #15
+    bpl skipthreeg
+    
+    clc
+    adc #1
+
+skipthreeg  
+    clc
+    adc #1
+    sta CHSHOOT
     
 skipshoot
     pla     ; load registers
@@ -1726,66 +1739,66 @@ chshoot
     ; Y position
     lda CHSHOOT
     and #$60
-    ;sta WORKAREA
     beq cupxshot        ; no y offset
     
-    cmp $20         ; pos 1
-    bne ynext
-    lda #22
-    jmp cupxshot
-
-ynext    
-    cmp $40         ; pos
-    bne ynextxt
-    lda #44
-    jmp cupxshot
-
-ynextxt    
-    lda #66
-        
-cupxshot  
-    sta WORKAREA
-    ; X position of shot   
-    lda CHSHOOT
-    and #$1f    
-    ;clc 
-    ;adc GROUNDOFFSET  ; A = X + CUPYOFSET
-    ;sta WORKAREA   
-    
-    clc
-    sbc WORKAREA
+    ; Cloud Shoot
+    lda CHSHOOT   ; load x offset
+    and #$1f 
     tax
     
-    lda #28   ; bullet
+    lda #28   ; Draw bullet
+    sta CLOUDOFFSET,X  ; GROUNDOFFSET + x -(y*22)
+    lda #2    ;red
+    sta CLOUDOFFSET+SPACECOLOFF,X
+    
+    lda #12     ; Erase previous bullet 
+    sta CLOUDOFFSET-1,X  ; GROUNDOFFSET + X -(Y*22)-1
+    
+    jmp cupshotcol
+    
+cupxshot  
+    lda CHSHOOT   ; load x offset
+    and #$1f 
+    tax
+    
+    lda #28   ; Draw bullet
     sta GROUNDOFFSET,X  ; GROUNDOFFSET + x -(y*22)
     lda #2    ;red
     sta GROUNDOFFSET+SPACECOLOFF,X
     
-    ; Erase previous bullet 
-    lda #12
+    lda #12     ; Erase previous bullet 
     sta GROUNDOFFSET-1,X  ; GROUNDOFFSET + X -(Y*22)-1
 
+cupshotcol
     inc CHSHOOT    ; next location
-       
     
     ; Check if end of shot; reset bit 0 of CHSHOOT
     lda CHSHOOT
     and #$1f
-    cmp #$12
+    cmp #17
     ;cmp #     ;BOSSPOSI+4
     ;bmi chkboss  ; if not at end, just move on to if boss shoots
+    bpl pastboss  ; fix random error
     bne crsttime 
+pastboss    
+    lda #12     ; also erase last bullet if not past boss
+    sta GROUNDOFFSET+16
+    sta CLOUDOFFSET+16
+
+    ;lda #12     ; also erase last bullet if not past boss
+    ;sta GROUNDOFFSET-1,X
+    ;sta CLOUDOFFSET-1,X
     lda #0     ; otherwise, clear shoot bit
     sta CHSHOOT
-    lda #12     ; also erase last bullet
-    sta GROUNDOFFSET,X
+
     ; Collision resolution  - must have hit boss since he doesn't move
     dec BOSSLIVES
     
     inc SCORE
     
     
-crsttime    
+crsttime   
+    
     ; Reset timer if not at end 
     ;lda #0
     ;sta CHST1
