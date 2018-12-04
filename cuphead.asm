@@ -77,7 +77,7 @@ main
     jsr clear        ; clear screen
 
     jsr disstartscreen      ; display start screen   
-	;jsr	song		; play the title song
+	jsr	song		; play the title song
     
     jsr disoptions   ; display the game's options for selection  
     
