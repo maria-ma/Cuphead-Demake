@@ -51,7 +51,7 @@ BST2 EQU $1ded
 ;WORKAREA EQU $1dee
 
 ; Boss Shield Timer
-BOSSSHIELDTIMER EQU $1dee
+BOSSSHIELDTIMER EQU $1dee  ; bit0=shield up or not; rest timer for shield
 
 ; Jumping Clouds
 CLOUD1 EQU #$5
@@ -203,7 +203,7 @@ continue
     jsr playfield
     
     
-    
+    jsr dis_boss_shield
     
     ;jsr distombstone
     
@@ -1705,6 +1705,29 @@ distombstone
 
     rts
     
+;;;;;;;;;;;;;;;;;;;;;;;
+; Display Boss Shield ;
+;---------------------;
+; Args: None          ;
+; Returns: Nothing    ;
+;;;;;;;;;;;;;;;;;;;;;;;
+dis_boss_shield
+    pha
+
+    lda #11 ; block
+    sta GROUNDOFFSET+16
+    sta GROUNDOFFSET-ROWDIFF+16
+    sta CLOUDOFFSET+16
+    sta CLOUDOFFSET-ROWDIFF+16
+    
+    ; Set indicating shield is up
+    lda BOSSSHIELDTIMER
+    ora #$80
+    sta BOSSSHIELDTIMER
+    
+    pla
+    rts  
+    
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; CUPHEAD SHOOT SUBROUTINE            ;
 ;-------------------------------------;
@@ -1783,9 +1806,11 @@ cupshotcol
     bpl pastboss  ; fix random error
     bne crsttime 
 pastboss    
-    lda #12     ; also erase last bullet if not past boss
+    lda #12     ; also erase last bullet and/or shield if past or at boss
     sta GROUNDOFFSET+16
     sta CLOUDOFFSET+16
+    sta GROUNDOFFSET-ROWDIFF+16
+    sta CLOUDOFFSET-ROWDIFF+16
 
     ;lda #12     ; also erase last bullet if not past boss
     ;sta GROUNDOFFSET-1,X
@@ -1794,10 +1819,28 @@ pastboss
     sta CHSHOOT
 
     ; Collision resolution  - must have hit boss since he doesn't move
+    ; Check if shield is up
+    lda BOSSSHIELDTIMER
+    and #$80
+    beq declives  ; not set
     
+    lda BOSSSHIELDTIMER
+    and #$7f
+    sta BOSSSHIELDTIMER
+    
+    jmp crsttime
+declives
     dec BOSSLIVES
     
-    inc SCORE
+    ; Sound effect for hit
+    lda #183    ; A
+    sta $900b
+    jsr wait
+    jsr wait
+    lda #0
+    sta $900b
+    
+    inc SCORE    ;TODO: inc score when shooting shield?
     
     
 crsttime   
@@ -2038,7 +2081,24 @@ bisshoot
 musicnote
     ; Which note (if any) gets played
     
+    ;;;;;;;;;;;;;;;
+    ; BOSS SHIELD ;
+    ;;;;;;;;;;;;;;;
+    ; Check if shield is up
+    ;lda BOSSSHIELDTIMER
+    ;and #$80
+    ;bne setinterruptimer  ; if shield is up, don't do anything
     
+    ; Check if timer is at 0
+    ;lda BOSSSHIELDTIMER     ; shield not up so don't have to clear highest bit
+    ;bne decshieldtimer
+    
+    ;jsr dis_boss_shield
+    
+    ;jmp setinterruptimer
+    ; If not, decrement timer
+;decshieldtimer   
+    ;dec BOSSSHIELDTIMER
     
     ;;;;;;;;;;;;;;;;;;
     ; Boss Movement? ;
@@ -2051,7 +2111,9 @@ musicnote
     ;lda #$ff     
     ;sta $9119     
     ;sta $9118   
-    
+
+
+setinterruptimer    
     ; set timer 2
     lda #$07     ; 2s 
     sta $9119
