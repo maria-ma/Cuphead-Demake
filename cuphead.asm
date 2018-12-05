@@ -51,8 +51,21 @@ BOSSSHIELDTIMER EQU $1dee  ; bit0=shield up or not; rest timer for shield
 CLOUD1 EQU #$5
 CLOUD2 EQU #$d
 
+; Colors
+BLACK EQU 0
+RED EQU 2
+CYAN EQU 3
+GREEN EQU 5
+BLUE EQU 6
+LTCYAN EQU 184
 
-; Could have equates for colors
+; Memory Maps
+CHROUT EQU $ffd2
+SCREEN EQU $900f
+SPEAKER1 EQU $900a
+SPEAKER2 EQU $900b
+SPEAKER3 EQU $900c
+VOL EQU $900e
 
 		; target processor, tells dasm which processor we want
 		processor 6502
@@ -183,8 +196,8 @@ continue
 
     cli
 
-    lda #184          ; change to light cyan
-    sta $900f
+    lda #LTCYAN          ; change to light cyan
+    sta SCREEN
 
     lda #3			; initiate lives
     sta CHLIVES
@@ -268,7 +281,7 @@ jump
     sta CLOUDOFFSET,X
 
     ; store color of jumping cuphead
-    lda #2
+    lda #RED
     sta CLOUDOFFSET+SPACECOLOFF,X
 
     ; wait a bit
@@ -376,19 +389,19 @@ shoot
 chtimeshoot
     ; PLAY SHOOT SOUND EFFECT
     lda #$0f	; vol 15
-		sta $900e	; store in vol mem (36878)
+		sta VOL	; store in vol mem (36878)
     ; Loop and decrement 254 to 128
     lda #$80    ; load 128 into acc
     sta 7165  ; store at mem loc 7165; used for comparison later
     ; put 254 in x
     ldx #$fe
 shootloop
-    stx $900c   ; put in third speaker
+    stx SPEAKER3   ; put in third speaker
     ldy    #$ff   ; make note last longer
 shoottimer   ; make the notes last a little longer
     dey
     bne shoottimer
-    sty $900c   ; store 0 in third speaker after
+    sty SPEAKER3   ; store 0 in third speaker after
     iny
     dex         ; dec x by 1
     txa         ; for check
@@ -465,7 +478,7 @@ draw
     ldx $0              ; Draw Cuphead
     lda #31
     sta CLOUDOFFSET,X
-    lda #2    ;red
+    lda #RED    ;red
     sta CLOUDOFFSET+SPACECOLOFF,X
 
     lda #12
@@ -479,7 +492,7 @@ drawground         ; Otherwise, draw on ground
     ldx $0              ; Draw Cuphead
     lda #31
     sta GROUNDOFFSET,X
-    lda #2    ;red
+    lda #RED    ;red
     sta GROUNDOFFSET+SPACECOLOFF,X
 
     lda #12
@@ -537,7 +550,7 @@ draw1
     sta GROUNDOFFSET,Y
 
     ; add color
-    lda #2
+    lda #RED
     sta GROUNDOFFSET+SPACECOLOFF,Y
 
     jmp enddraw
@@ -547,7 +560,7 @@ draw2
     sta CLOUDOFFSET,Y
 
     ; add color
-    lda #2
+    lda #RED
     sta CLOUDOFFSET+SPACECOLOFF,Y
 
     jmp enddraw
@@ -585,7 +598,7 @@ waitloop
 clear
     pha
     lda #$93
-    jsr $ffd2
+    jsr CHROUT
     pla
 		rts
 
@@ -666,7 +679,7 @@ printboss
     sta BOSSSTART+3+3*ROWDIFF
 
     ;Boss Color
-    lda #6
+    lda #BLUE
     sta BOSSSTART+SPACECOLOFF
     sta BOSSSTART+1+SPACECOLOFF
     sta BOSSSTART+2+SPACECOLOFF
@@ -715,7 +728,7 @@ printlives
 		ldx CHLIVES
 		cpx #0	; no lives left?
 		bne drawhearts
-		lda #3 ;cyan
+		lda #CYAN ;cyan
     sta $1e17+SPACECOLOFF ; erase last heart
 		jsr diswindead ; display results
 		rts
@@ -727,8 +740,8 @@ drawhearts
     sta $1e18 ; heart #2
     sta $1e19 ; heart #3
 
-    ldy #2   ; red
-		lda #3	 ; cyan
+    ldy #RED   ; red
+	lda #CYAN	 ; cyan
 
     sty $1e17+SPACECOLOFF
 
@@ -795,7 +808,7 @@ startfloor
     sta $1fb7,X
 
     ;color floor
-    lda #5
+    lda #GREEN
     sta $97a2,X
     sta $97a3,X
     sta $97a4,X
@@ -864,7 +877,7 @@ wait2end
 
 song
 		lda	#$0f
-		sta	$900e	; set speaker volume to max
+		sta	VOL	; set speaker volume to max
 
 		; 900b = speaker 2
 		; 900c = speaker 3
@@ -903,8 +916,8 @@ song
 		jsr playb
 
 		lda	#$0	; turn off speakers
-		sta	$900e
-		sta	$900c
+		sta	VOL
+		sta	SPEAKER3
 		rts			; go back to main
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -915,63 +928,63 @@ song
 
 playa
 		lda	#$da	; note a (218)
-		sta	$900c	; play in speaker 2
+		sta	SPEAKER3	; play in speaker 2
 		ldy	#$fa	; duration
 		jsr	play
 		rts
 
 playbf
 		lda	#$dc	; note b flat (220)
-		sta	$900c	; play in speaker 2
+		sta	SPEAKER3	; play in speaker 2
 		ldy	#$7d	; duration
 		jsr	play
 		rts
 
 playb
 		lda	#$de	; note b (222)
-		sta	$900c	; play in speaker 2
+		sta	SPEAKER3	; play in speaker 2
 		ldy	#$7d	; duration
 		jsr	play
 		rts
 
 playcf
 		lda #223	; note c flat (223)
-		sta $900c
+		sta SPEAKER3
 		ldy #$7d
 		jsr play
 		rts
 
 playc
 		lda	#$e0	; note c (224)
-		sta	$900c	; play in speaker 2 )
+		sta	SPEAKER3	; play in speaker 2 )
 		ldy	#$7d	; duration
 		jsr	play
 		rts
 
 playf
 		lda	#$d0	; note f (208)
-		sta	$900c	; play in speaker 2 )
+		sta	SPEAKER3	; play in speaker 2 )
 		ldy	#$fa	; duration
 		jsr	play
 		rts
 
 playg
 		lda	#$d6	; note g (214)
-		sta	$900c	; play in speaker 2 )
+		sta	SPEAKER3	; play in speaker 2 )
 		ldy	#$fa	; duration
 		jsr	play
 		rts
 
 playgf
 		lda	#$d3	; note g flat (211)
-		sta	$900c	; play in speaker 2 )
+		sta	SPEAKER3	; play in speaker 2 )
 		ldy	#$fa	; duration
 		jsr	play
 		rts
 
 pause
 		lda	#$0		; rest note
-		sta	$900c
+		sta	SPEAKER3
 		ldy	#$7f	; duration
 		jsr	play
 		rts
@@ -997,7 +1010,7 @@ disstartscreen
     jsr clear         ; clear screen
 
     lda #40          ; change to red with black border
-    sta $900f
+    sta SCREEN
 
     lda #255          ; change where it gets its characters from
     sta $9005
@@ -1378,7 +1391,7 @@ boss_shoot_check
     ; Shoot sound effect
     ; PLAY SHOOT SOUND EFFECT
     lda #$0f	; vol 15
-		sta $900e	; store in vol mem (36878)
+		sta VOL	; store in vol mem (36878)
     ; Loop and decrement 254 to 128
     lda #$80    ; load 128 into acc
     sta 7165  ; store at mem loc 7165; used for comparison later
@@ -1386,12 +1399,12 @@ boss_shoot_check
     ldx #$fe
 
 bossshootloop
-    stx $900a  ; put in third speaker
+    stx SPEAKER1  ; put in third speaker
     ldy #$ff   ; make note last longer
 bossshoottimer   ; make the notes last a little longer
     dey
     bne bossshoottimer
-    sty $900a   ; store 0 in third speaker after
+    sty SPEAKER1   ; store 0 in third speaker after
     iny
     dex         ; dec x by 1
     txa         ; for check
@@ -1478,11 +1491,11 @@ cupprint
     ; Otherwise, show win
     ; Win Sound Effect
     lda #240    ; G
-    sta $900c
+    sta SPEAKER3
     jsr wait
     jsr wait
     lda #0
-    sta $900c
+    sta SPEAKER3
 
     ; Winning Display : print YAY
     lda #16  ;Y
@@ -1494,7 +1507,7 @@ cupprint
     jsr printscore
 
     ldy #16
-    lda #2
+    lda #RED
 redspaceloop
     cpy #0
     beq winfinite
@@ -1506,7 +1519,7 @@ redspaceloop
     sta MSGSTART,Y  ; Print block here
     sta MSGSTART+176,Y
 
-    lda #2
+    lda #RED
 
     dey
     jmp redspaceloop
@@ -1549,7 +1562,7 @@ deadword	; losing display
     jsr printscore
 
     ldy #16
-    lda #0
+    lda #BLACK
 blackspaceloop	; display black stripes
     cpy #0
     beq infinite
@@ -1561,7 +1574,7 @@ blackspaceloop	; display black stripes
     sta MSGSTART,Y  ; Print block here
     sta MSGSTART+176,Y
 
-    lda #0
+    lda #BLACK
 
     dey
     jmp blackspaceloop
@@ -1685,7 +1698,7 @@ distombstone
     sta TOMBSTART+3*ROWDIFF+2
 
     ; Color - Black
-    lda #0
+    lda #BLACK
     sta TOMBSTART+SPACECOLOFF
     sta TOMBSTART+1+SPACECOLOFF
     sta TOMBSTART+2+SPACECOLOFF
@@ -1728,7 +1741,7 @@ dis_boss_shield
     sta CLOUDOFFSET+16
     sta CLOUDOFFSET-ROWDIFF+16
 
-    lda #6   ; color them blue
+    lda #BLUE   ; color them blue
     sta GROUNDOFFSET+16+SPACECOLOFF
     sta GROUNDOFFSET-ROWDIFF+16+SPACECOLOFF
     sta CLOUDOFFSET+16+SPACECOLOFF
@@ -1764,7 +1777,7 @@ chshoot
 
     lda #28   ; Draw bullet
     sta CLOUDOFFSET,X  ; GROUNDOFFSET + x -(y*22)
-    lda #2    ;red
+    lda #RED    ;red
     sta CLOUDOFFSET+SPACECOLOFF,X
 
     ; Check if first shot
@@ -1790,7 +1803,7 @@ cupxshot
 
     lda #28   ; Draw bullet
     sta GROUNDOFFSET,X  ; GROUNDOFFSET + x -(y*22)
-    lda #2    ;red
+    lda #RED    ;red
     sta GROUNDOFFSET+SPACECOLOFF,X
 
     ; Check if first shot
@@ -1844,11 +1857,11 @@ declives
 
     ; Sound effect for hit
     lda #183    ; A
-    sta $900b
+    sta SPEAKER2
     jsr wait
     jsr wait
     lda #0
-    sta $900b
+    sta SPEAKER2
 
     inc SCORE 	; increment score
 
@@ -1882,7 +1895,7 @@ bossshoot
 
     lda #28   ; Draw bullet
     sta CLOUDOFFSET-1,X  ; GROUNDOFFSET + x -(y*22)
-    lda #6    ;blue
+    lda #BLUE    ;blue
     sta CLOUDOFFSET-1+SPACECOLOFF,X
 
     ; Check if first shot
@@ -1909,7 +1922,7 @@ bossxshot
 
     lda #28   ; Draw bullet
     sta GROUNDOFFSET-1,X  ; GROUNDOFFSET + x -(y*22)
-    lda #6    ;red
+    lda #BLUE    
     sta GROUNDOFFSET-1+SPACECOLOFF,X
 
     ; Check if first shot
