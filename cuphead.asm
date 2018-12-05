@@ -1640,18 +1640,16 @@ winfinite
 ; returns: none                                   ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;  time bonus (check range) * times boss shot * hp bonus * 100
-; might removie: time bonus and multiplying score at end?
 printscore
-		lda SCORE
+		lda SCORE ; max score should be 20
 		ldx CHLIVES
 		; remaining lives bonus
 		cpx #2
 		bmi checkscore
-		asl	; double score if you have two lives left
+		asl	; double score if you have two lives left (40)
 		cpx	#3
 		bne	checkscore
-		adc SCORE	; triple score if you have all lives left
+		adc SCORE	; triple score if you have all lives left (60)
 checkscore
 		sta SCORE
 		; display GRADE
@@ -1680,9 +1678,9 @@ grade_c
 		lda #17	; if 10 < score <= 20, get a c grade
 		jmp printgrade
 grade_b
-		cmp #26
+		cmp #41
 		bpl grade_a
-		lda #63 ; if 20 < score <= 25, get a b grade
+		lda #63 ; if 20 < score <= 40, get a b grade
 		jmp printgrade
 grade_a
 		lda #15 ; otherwise, get the highest grade
@@ -1770,13 +1768,13 @@ distombstone
 dis_boss_shield
     pha
 
-    lda #11 ; block
+    lda #32 ; blueberry shield character
     sta GROUNDOFFSET+16
     sta GROUNDOFFSET-ROWDIFF+16
     sta CLOUDOFFSET+16
     sta CLOUDOFFSET-ROWDIFF+16
 
-    lda #1   ; color them white
+    lda #6   ; color them blue
     sta GROUNDOFFSET+16+SPACECOLOFF
     sta GROUNDOFFSET-ROWDIFF+16+SPACECOLOFF
     sta CLOUDOFFSET+16+SPACECOLOFF
@@ -2295,8 +2293,8 @@ data
     ; Char 31 = Cuphead 1
     .byte #$e0, #$7e, #$42, #$42, #$24, #$7e, #$3c, #$24
 
-    ; Char 32 = Cuphead 2; not used right now
-    .byte #0,#0,#0,#0,#0,#0,#0,#0
+    ; Char 32 = Boss Shield
+		.byte #$18, #$18, #$66, #$c3, #$81, #$c3, #$7e, #$0
 
     ; Char 33 to 48 = Small Boss
     .byte #$0, #$0, #$0, #$0, #$0, #$0, #$0, #$1 ;33
