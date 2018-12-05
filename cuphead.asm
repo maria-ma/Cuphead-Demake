@@ -1,10 +1,7 @@
 ; draw basic playfield
-; testing drawing something meaniningful with VIC Characters
 SPACECOLOFF EQU $7800  ; difference between location in space and it's color location
 GROUNDOFFSET EQU 8076
-;GROUNDOFFSET EQU 8076
 CLOUDOFFSET EQU 8032
-;CLOUDOFFSET EQU 8032
 ROWDIFF EQU 22
 
 ; For drawing start screen
@@ -43,12 +40,9 @@ CHSHOOT EQU $1de8   ; bit0 =y/n shoot; bit1=first shot bit2=yvalue of shot; rest
 BSHOOT EQU $1de9
 
 CHST1 EQU $1dea  ; cuphead bullet timer
-;CHST2 EQU $1deb
 
 BST1 EQU $1dec  ; boss bullet timer
 BST2 EQU $1ded
-
-;WORKAREA EQU $1dee
 
 ; Boss Shield Timer
 BOSSSHIELDTIMER EQU $1dee  ; bit0=shield up or not; rest timer for shield
@@ -60,24 +54,30 @@ CLOUD2 EQU #$d
 
 ; Could have equates for colors
 
-    ; target processor, tells dasm which processor we want
-	processor 6502
-	; code origin
-	; seg
-	org $1001
+		; target processor, tells dasm which processor we want
+		processor 6502
+		; code origin
+		; seg
+		org $1001
 
-    ; the basic stub to run the assembly code
-	    dc.w    end
-    	dc.w    1010    ; from looking at memory, try memory location $1010
-    	dc.b    $9e, "4112", 0 ; 1010 in hex base 10 = 4112
+		; the basic stub to run the assembly code
+		dc.w    end
+		dc.w    1010    ; from looking at memory, try memory location $1010
+		dc.b    $9e, "4112", 0 ; 1010 in hex base 10 = 4112
 end
     dc.w    0    ; program stub
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; MAIN: START SCREEN                     ;
+;----------------------------------------;
+; initiates start screen and its options ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 main
     jsr clear        ; clear screen
 
     jsr disstartscreen      ; display start screen
-	jsr	song		; play the title song
+		jsr	song		; play the title song
 
     jsr disoptions   ; display the game's options for selection
 
@@ -139,6 +139,13 @@ select
     jsr discredits
     jmp optionchoiceloop
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; CONTINUE                          ;
+;-----------------------------------;
+; initializes and sets up game      ;
+; screen, counters, interrupts, etc ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 continue
     jsr wait
     jsr wait
@@ -163,7 +170,6 @@ continue
 
     lda #0
     sta CHST1
-    ;sta CHST2
     sta BSHOOT
     sta CHSHOOT
     sta BST1
@@ -177,21 +183,17 @@ continue
 
     cli
 
-
-
-
     lda #184          ; change to light cyan
     sta $900f
 
     lda #3			; initiate lives
     sta CHLIVES
-	lda #10
-	sta BOSSHALF	; to know when to transition boss stages
-	asl
-	sta BOSSLIVES	; initiate boss lives
-	lda #0
+		lda #10
+		sta BOSSHALF	; to know when to transition boss stages
+		asl
+		sta BOSSLIVES	; initiate boss lives
+		lda #0
     sta SCORE	; initiate score
-
 
     ; set up for boss check
     lda #$99
@@ -202,12 +204,7 @@ continue
 
     jsr playfield
 
-
     jsr dis_boss_shield
-
-    ;jsr distombstone
-
-    ;jsr diswindead
 
     ; store cuphead at starting position 8076
     ldx #31
@@ -215,158 +212,149 @@ continue
     ldx #2     ; red
     stx 8076+SPACECOLOFF
 
-        ; start at position 0,0
-         ldx #0
-         stx $0     ; x coord
-         stx $1     ; y coord
+		; start at position 0,0
+		ldx #0
+		stx $0     ; x coord
+		stx $1     ; y coord
 
-loop    ; Check if boss shoots
-        jsr boss_shoot_check
-		jsr boss_life_check
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; LOOP: MAIN GAME LOOP                                     ;
+;----------------------------------------------------------;
+; checks for: boss shooting, boss life and keyboard input. ;
+; exits loop when boss or cuphead's life reaches 0         ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-        jsr wait
-        lda 197                                 ; current key pressed
-        cmp #17                                 ; a
-        beq left                                ; left
-        cmp #18                                 ; d
-        beq right                               ; right
-        cmp #9                                  ; w
-        beq jump                                ; up
-        ; check if pressed shoot button
-        cmp #32                                 ; space
-        bne loop
-        jsr shoot
-        ;jmp
+loop
+		; Check if boss shoots
+    jsr boss_shoot_check
+		jsr boss_life_check	; check boss life
+
+		; assume down is not an option
+    jsr wait
+    lda 197                                 ; current key pressed
+    cmp #17                                 ; a
+    beq left                                ; left
+    cmp #18                                 ; d
+    beq right                               ; right
+    cmp #9                                  ; w
+    beq jump                                ; up
+    ; check if pressed shoot button
+    cmp #32                                 ; space
+    bne loop
+    jsr shoot
 
 jump
-; animated jump routine
-; doesn't go on platform
-; doesn't animate when boss shoots (problemo)
-        ; don't jump if on cloud
-        lda $1
-        cmp #1
-        beq endloop
+    ; don't jump if on cloud
+    lda $1
+    cmp #1
+    beq endloop
 
-        ; Check if under clouds
-        lda $0
-        cmp #4
-        beq jump1
-        lda $0
-        cmp #12
-        beq jump1
+    ; Check if under clouds
+    lda $0
+    cmp #4
+    beq jump1
+    lda $0
+    cmp #12
+    beq jump1
 
-        ; if not under clouds, jumping animation
-        ; removes previous cuphead when jump is pressed
-        ldx $0
+    ; if not under clouds, jumping animation
+    ; removes previous cuphead when jump is pressed
+    ldx $0
 		lda #12
-		sta GROUNDOFFSET,X		; TODO: make a jump to the clouds
+		sta GROUNDOFFSET,X
 
-        ; make jumping cuphead
-        lda #31
-        sta CLOUDOFFSET,X
+    ; make jumping cuphead
+    lda #31
+    sta CLOUDOFFSET,X
 
-        ; store color of jumping cuphead
-        lda #2
-        sta CLOUDOFFSET+SPACECOLOFF,X
+    ; store color of jumping cuphead
+    lda #2
+    sta CLOUDOFFSET+SPACECOLOFF,X
 
-        ; wait a bit
-        jsr wait
-        jsr wait
-        jsr wait
-        jsr wait
+    ; wait a bit
+    jsr wait
+    jsr wait
+    jsr wait
+    jsr wait
 
-        ; remove jumping cuphead
-        lda #12
-        sta CLOUDOFFSET,X
+    ; remove jumping cuphead
+    lda #12
+    sta CLOUDOFFSET,X
 
-        ; check place on screen?
-        ;lda 211                 ; position of cursor?
-        ;cmp #5,X                ; checking every 5st position, want single spot?
-        ;beq jump1
-
-        jmp endloop
+    jmp endloop
 
 jump1
-        lda #1
-        sta $1     ; update Y
-        ;ldx $0
-        ;lda #12
-        ;sta GROUNDOFFSET,Y
-        ;sta CLOUDOFFSET,Y
-        ;jsr chplaceholder
-        ;jmp endloop
+    lda #1
+    sta $1     ; update Y
 
 endloop
-        ldx $0
-        lda #12
-        sta GROUNDOFFSET-1,X
-        sta GROUNDOFFSET+1,X
+    ldx $0
+    lda #12
+    sta GROUNDOFFSET-1,X
+    sta GROUNDOFFSET+1,X
 
-        jsr draw
-        jmp loop
-
-
-; be able to move left or right only for now
-; assume down is not an option
-; to do: fix up so it "jumps?"
+    jsr draw
+    jmp loop
 
 left    ; Check if in the clouds - have to fall if so
-        lda $1
-        cmp #1
-        bne leftnormal
-        lda #0
-        sta $1
+    lda $1
+    cmp #1
+    bne leftnormal
+    lda #0
+    sta $1
 
 leftnormal
-        ldx $0
-        dex                                     ; move left
-        txa
-        cmp #$ff                                ; bounds
-        beq endloop
-        stx $0
-        jmp endloop
+    ldx $0
+    dex               ; move left
+    txa
+    cmp #$ff      		; bounds
+    beq endloop
+    stx $0
+    jmp endloop
 
 right   ; Check if in the clouds - have to fall if so
-        lda $1
-        cmp #1
-        bne rightnormal
-        lda #0
-        sta $1
+    lda $1
+    cmp #1
+    bne rightnormal
+    lda #0
+    sta $1
 
 rightnormal
-        ldx $0
-        inx                     ; move right
-        txa
-        cmp #$e
-        beq endloop
-        stx $0
-        jmp endloop
+    ldx $0
+    inx                     ; move right
+    txa
+    cmp #$e
+    beq endloop
+    stx $0
+    jmp endloop
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;Boss Life Check Subroutine                         ;
+; Boss Life Check Subroutine                        ;
 ;---------------------------------------------------;
 ; checks the boss's remaining hp                    ;
 ; to see if it should transition to its second stage;
 ; or if it has died yet                             ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 boss_life_check
-	lda BOSSLIVES
-	cmp BOSSHALF
-	beq boss_half
-	cmp	#0
-	beq boss_dead
-	rts
+		lda BOSSLIVES	; load boss lives
+		cmp BOSSHALF	; check if life reached halfway point
+		beq boss_half
+		cmp	#0	; check if life reached 0
+		beq boss_dead
+		rts
 
 boss_half
-	jsr distombstone
-	rts
+		jsr distombstone	; transition to tombstone
+		rts
 
 boss_dead
-	jsr diswindead
-	rts
+		jsr diswindead	; display win screen
+		rts
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; CUPHEAD SHOOT SUBROUTINE ;
+;--------------------------;
 ; args: none               ;
 ; returns: nothing         ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -388,7 +376,7 @@ shoot
 chtimeshoot
     ; PLAY SHOOT SOUND EFFECT
     lda #$0f	; vol 15
-	sta $900e	; store in vol mem (36878)
+		sta $900e	; store in vol mem (36878)
     ; Loop and decrement 254 to 128
     lda #$80    ; load 128 into acc
     sta 7165  ; store at mem loc 7165; used for comparison later
@@ -428,9 +416,6 @@ shoottimer   ; make the notes last a little longer
     cpx #15
     bpl skipthreec
 
-    ;clc
-    ;adc #1
-
 skipthreec
     clc
     adc #1
@@ -447,9 +432,6 @@ chgshoot   ; cuphead shooting on ground
     cpx #15
     bpl skipthreeg
 
-    ;clc
-    ;adc #1
-
 skipthreeg
     clc
     adc #1
@@ -464,150 +446,156 @@ skipshoot
 
     jmp loop
 
-;;;;;;;;;;;;;;;;;;
-; DRAW SUBROUTINE;
-;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;
+; DRAW SUBROUTINE ;
+;;;;;;;;;;;;;;;;;;;
+
 draw
-        pha     ; save registers
-        txa
-        pha
-        tya
-        pha
+    pha     ; save registers
+    txa
+    pha
+    tya
+    pha
 
-        ; Check if in clouds
-        lda $1
-        cmp #1
-        bne drawground
+    ; Check if in clouds
+    lda $1
+    cmp #1
+    bne drawground
 
-        ldx $0              ; Draw Cuphead
-        lda #31
-        sta CLOUDOFFSET,X
-        lda #2    ;red
-        sta CLOUDOFFSET+SPACECOLOFF,X   ;
+    ldx $0              ; Draw Cuphead
+    lda #31
+    sta CLOUDOFFSET,X
+    lda #2    ;red
+    sta CLOUDOFFSET+SPACECOLOFF,X
 
-        lda #12
-        sta GROUNDOFFSET,X    ; Erase Below
-        sta CLOUDOFFSET+1,X      ; Erase right
-        sta CLOUDOFFSET-1,X      ; Erase left
+    lda #12
+    sta GROUNDOFFSET,X    ; Erase Below
+    sta CLOUDOFFSET+1,X      ; Erase right
+    sta CLOUDOFFSET-1,X      ; Erase left
 
-        jmp enddraw
+    jmp enddraw
 
 drawground         ; Otherwise, draw on ground
-        ldx $0              ; Draw Cuphead
-        lda #31
-        sta GROUNDOFFSET,X
-        lda #2    ;red
-        sta GROUNDOFFSET+SPACECOLOFF,X   ;
+    ldx $0              ; Draw Cuphead
+    lda #31
+    sta GROUNDOFFSET,X
+    lda #2    ;red
+    sta GROUNDOFFSET+SPACECOLOFF,X
 
-        lda #12
-        sta CLOUDOFFSET+1,X      ; Fall off left
-        sta CLOUDOFFSET-1,X      ; fall off right
-        sta GROUNDOFFSET+1,X      ; Erase right
-        sta GROUNDOFFSET-1,X      ; Erase left
+    lda #12
+    sta CLOUDOFFSET+1,X      ; Fall off left
+    sta CLOUDOFFSET-1,X      ; fall off right
+    sta GROUNDOFFSET+1,X      ; Erase right
+    sta GROUNDOFFSET-1,X      ; Erase left
 
 enddraw
-        pla     ; load registers
-        tay
-        pla
-        tax
-        pla
+    pla     ; load registers
+    tay
+    pla
+    tax
+    pla
 
-        rts
+    rts
 drawnormal
-        ldx $1
-        ldy #0
-        txa
-        cmp #$B
-        bcc drawY
-        clc
-        sbc #$A
-        cmp #0
-        beq drawX1
-        tax
-drawY   txa
-        cmp #0
-        beq drawX1
-        clc
-        tya
-        adc #$16
-        tay
-        dex
-        jmp drawY
+    ldx $1
+    ldy #0
+    txa
+    cmp #$B
+    bcc drawY
+    clc
+    sbc #$A
+    cmp #0
+    beq drawX1
+    tax
+drawY
+		txa
+    cmp #0
+    beq drawX1
+    clc
+    tya
+    adc #$16
+    tay
+    dex
+    jmp drawY
 drawX1  ldx $0
-drawX2  txa
-        cmp #0
-        beq doneX
-        dex
-        iny
-        jmp drawX2
-doneX   ldx $1
-        txa
-        cmp #$B
-        bcs draw2
-        jmp draw1
-
-
+drawX2
+		txa
+    cmp #0
+    beq doneX
+    dex
+    iny
+    jmp drawX2
+doneX
+		ldx $1
+    txa
+    cmp #$B
+    bcs draw2
+    jmp draw1
 
 draw1
-        lda #31
-        sta GROUNDOFFSET,Y
+    lda #31
+    sta GROUNDOFFSET,Y
 
-        ; add color
-        lda #2
-        sta GROUNDOFFSET+SPACECOLOFF,Y
+    ; add color
+    lda #2
+    sta GROUNDOFFSET+SPACECOLOFF,Y
 
-        jmp enddraw
+    jmp enddraw
 
 draw2
-        lda #31
-        sta CLOUDOFFSET,Y
+    lda #31
+    sta CLOUDOFFSET,Y
 
-        ; add color
-        lda #2
-        sta CLOUDOFFSET+SPACECOLOFF,Y
+    ; add color
+    lda #2
+    sta CLOUDOFFSET+SPACECOLOFF,Y
 
-        jmp enddraw
+    jmp enddraw
 
 ;;;;;;;;;;;;;;;;;;;
 ; Wait Subroutine ;
 ;;;;;;;;;;;;;;;;;;;
+
 wait
-        pha     ; save registers
-        txa
-        pha
-        tya
-        pha
+    pha     ; save registers
+    txa
+    pha
+    tya
+    pha
 
-        ldy #$16
-reset   ldx #$FF
-waitloop    dex
-        cpx #$0
-        bne waitloop
-        dey
-        cpy #$0
-        bne reset
+    ldy #$16
+reset
+		ldx #$FF
+waitloop
+		dex
+    cpx #$0
+    bne waitloop
+    dey
+    cpy #$0
+    bne reset
 
-        pla     ; load registers
-        tay
-        pla
-        tax
-        pla
+    pla     ; load registers
+    tay
+    pla
+    tax
+    pla
 
-        rts
-
+    rts
 
 clear
-        pha
-        lda #$93
-        jsr $ffd2
-        pla
+    pha
+    lda #$93
+    jsr $ffd2
+    pla
 		rts
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ; PLAYFIELD SUBROUTINE ;
+;----------------------;
 ; Args: None           ;
 ; Returns: Nothing     ;
 ;;;;;;;;;;;;;;;;;;;;;;;;
+
 playfield
     pha             ; Save Acc and x
     txa
@@ -637,7 +625,7 @@ printspaces23
     ldx #ROWDIFF*3
     jsr printfloor
 
-	jsr printlives
+		jsr printlives
 
 printboss
     ;boss
@@ -699,13 +687,11 @@ printboss
     sta BOSSSTART+2+3*ROWDIFF+SPACECOLOFF
     sta BOSSSTART+3+3*ROWDIFF+SPACECOLOFF
 
-
     ; Platforms
     lda #29
     sta 8036+22
 
     sta 8044+22
-    ;sta 7994
 
     pla     ; reload x and acc
     tax
@@ -719,19 +705,20 @@ printboss
 ; Prints Cuphead's current number of lives   ;
 ; Updates whenever Cuphead gets hit          ;
 ; (When life reaches 0, jump to lose screen) ;
+;--------------------------------------------;
 ; Args: None (get infro from cuphead lives)  ;
 ; Returns: Nothing                           ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 printlives
     ; lives
-	ldx CHLIVES
-	cpx #0
-	bne drawhearts
-	lda #3 ;cyan
-    sta $1e17+SPACECOLOFF
-	jsr diswindead
-	rts
+		ldx CHLIVES
+		cpx #0	; no lives left?
+		bne drawhearts
+		lda #3 ;cyan
+    sta $1e17+SPACECOLOFF ; erase last heart
+		jsr diswindead ; display results
+		rts
 
 drawhearts
     ; char
@@ -741,43 +728,45 @@ drawhearts
     sta $1e19 ; heart #3
 
     ldy #2   ; red
-	lda #3	 ; cyan
+		lda #3	 ; cyan
 
     sty $1e17+SPACECOLOFF
 
-	cpx #2
-	bmi oneheart
-    sty $1e18+SPACECOLOFF
-	cpx #3
-	bmi twoheart
-    sty $1e19+SPACECOLOFF
-	rts
+		cpx #2 ; two lives left?
+		bmi oneheart
+    sty $1e18+SPACECOLOFF	; colors in second life
+		cpx #3	; three lives left?
+		bmi twoheart
+    sty $1e19+SPACECOLOFF	; colors in third life
+		rts
 
 oneheart
-    sta $1e18+SPACECOLOFF
-	rts
+    sta $1e18+SPACECOLOFF ; erases second heart
+		rts
 twoheart
-    sta $1e19+SPACECOLOFF
-	rts
+    sta $1e19+SPACECOLOFF	; erases third heart
+		rts
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; PRINTFLOOR SUBROUTINE                     ;
+;-------------------------------------------;
 ; Arg: level of floor to printfloor; in X   ;
 ; returns: nothing                          ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 printfloor
     pha
     txa
     pha
 
-    ;lda #$a2        ; Floor
     cpx #0
-    bne otherld
+    bne otherld	; Floor
     lda #30
     jmp startfloor
 otherld
     lda #11
 startfloor
+		; draw floor
     sta $1fa2,X
     sta $1fa3,X
     sta $1fa4,X
@@ -840,9 +829,10 @@ startfloor
 
     rts
 
-;;;;;;;;;;;;;;;;;;;
-; WAIT2 SUBROUTINE;
-;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;
+; WAIT2 SUBROUTINE ;
+;;;;;;;;;;;;;;;;;;;;
+
 wait2
     pha     ; save registers
     txa
@@ -856,7 +846,6 @@ wait2loop
     dex
     beq wait2end   ; return now that loop is done
     jmp wait2loop
-
 
 wait2end
     pla     ; load registers
@@ -874,135 +863,134 @@ wait2end
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 song
-	lda	#$0f
-	sta	$900e	; set speaker volume to max
+		lda	#$0f
+		sta	$900e	; set speaker volume to max
 
-	; 900b = speaker 2
-	; 900c = speaker 3
-	; quarter note = 250 (fa) / eighth note = 125 (7d) / half note = 1000 (3e8
-	jsr	playa
-	jsr	playa
-	jsr playbf
-	jsr	pause
-	jsr playbf
-	jsr	pause
-	jsr playbf
-	jsr playbf
-	jsr	playg
-	jsr	playg
-	jsr	playf
-	jsr	pause
-	jsr	playf
-	jsr	pause
-	jsr	playf
-	jsr	playf
-	jsr	playa
-	jsr	playa
-	jsr playbf
-	jsr	pause
-	jsr playbf
-	jsr	pause
-	jsr playc
-	jsr playc
-	jsr	pause
-	jsr playc
-	jsr playc
-	jsr	pause
-	jsr playb
-	jsr playb
-	jsr playb
-	jsr playb
+		; 900b = speaker 2
+		; 900c = speaker 3
+		; quarter note = 250 (fa) / eighth note = 125 (7d)
+		jsr	playa
+		jsr	playa
+		jsr playbf
+		jsr	pause
+		jsr playbf
+		jsr	pause
+		jsr playbf
+		jsr playbf
+		jsr	playg
+		jsr	playg
+		jsr	playf
+		jsr	pause
+		jsr	playf
+		jsr	pause
+		jsr	playf
+		jsr	playf
+		jsr	playa
+		jsr	playa
+		jsr playbf
+		jsr	pause
+		jsr playbf
+		jsr	pause
+		jsr playc
+		jsr playc
+		jsr	pause
+		jsr playc
+		jsr playc
+		jsr	pause
+		jsr playb
+		jsr playb
+		jsr playb
+		jsr playb
 
-	lda	#$0
-	sta	$900e
-	sta	$900c
-	rts			; go back to main
+		lda	#$0	; turn off speakers
+		sta	$900e
+		sta	$900c
+		rts			; go back to main
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+; PLAY _ SUBROUTINES     ;
+;------------------------;
+; plays a specified note ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 playa
-	lda	#$da	; note a (218)
-	sta	$900c	; play in speaker 2 )
-	ldy	#$fa	; duration
-	jsr	play
-	rts
+		lda	#$da	; note a (218)
+		sta	$900c	; play in speaker 2
+		ldy	#$fa	; duration
+		jsr	play
+		rts
 
 playbf
-	lda	#$dc	; note b flat (220)
-	sta	$900c	; play in speaker 2 )
-	ldy	#$7d	; duration
-	jsr	play
-	rts
+		lda	#$dc	; note b flat (220)
+		sta	$900c	; play in speaker 2
+		ldy	#$7d	; duration
+		jsr	play
+		rts
 
 playb
-	lda	#$de	; note b flat (220)
-	sta	$900c	; play in speaker 2 )
-	ldy	#$7d	; duration
-	jsr	play
-	rts
+		lda	#$de	; note b (222)
+		sta	$900c	; play in speaker 2
+		ldy	#$7d	; duration
+		jsr	play
+		rts
 
 playcf
-	lda #223
-	sta $900c
-	ldy #$7d
-	jsr play
-	rts
+		lda #223	; note c flat (223)
+		sta $900c
+		ldy #$7d
+		jsr play
+		rts
 
 playc
-	lda	#$e0	; note b flat (224)
-	sta	$900c	; play in speaker 2 )
-	ldy	#$7d	; duration
-	jsr	play
-	rts
+		lda	#$e0	; note c (224)
+		sta	$900c	; play in speaker 2 )
+		ldy	#$7d	; duration
+		jsr	play
+		rts
 
 playf
-	lda	#$d0	; note a (214)
-	sta	$900c	; play in speaker 2 )
-	ldy	#$fa	; duration
-	jsr	play
-	rts
+		lda	#$d0	; note f (208)
+		sta	$900c	; play in speaker 2 )
+		ldy	#$fa	; duration
+		jsr	play
+		rts
 
 playg
-	lda	#$d6	; note a (214)
-	sta	$900c	; play in speaker 2 )
-	ldy	#$fa	; duration
-	jsr	play
-	rts
+		lda	#$d6	; note g (214)
+		sta	$900c	; play in speaker 2 )
+		ldy	#$fa	; duration
+		jsr	play
+		rts
 
 playgf
-	lda	#$d3	; note a (214)
-	sta	$900c	; play in speaker 2 )
-	ldy	#$fa	; duration
-	jsr	play
-	rts
+		lda	#$d3	; note g flat (211)
+		sta	$900c	; play in speaker 2 )
+		ldy	#$fa	; duration
+		jsr	play
+		rts
 
 pause
-	lda	#$0
-	sta	$900c
-	ldy	#$7f	; duration
-    ;jsr nothing
-    ;jsr nothing
-	jsr	play
-	rts
-; plays note
-play
-	;lda	#$20
-    ;jsr
-    jsr nothing
-    ;jsr nothing
-    ;jsr	$ffd2	; print if right if pressed
-	dey
-	bne	play
+		lda	#$0		; rest note
+		sta	$900c
+		ldy	#$7f	; duration
+		jsr	play
+		rts
 
-	rts
-
-
+play	; plays note
+  	jsr nothing
+		dey
+		bne	play
+		rts
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; disstartscreen SUBROUTINE                                    ;
 ;--------------------------------------------------------------;
 ; Displays the start screen that features cuphead and his name ;
+;--------------------------------------------------------------;
 ; Args: none                                                   ;
 ; Returns: nothing                                             ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 disstartscreen
     pha
 
@@ -1191,6 +1179,7 @@ printspaces2
 ; Args: None                      ;
 ; Returns: Nothing                ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 disoptions
     pha
     txa
@@ -1310,7 +1299,7 @@ disoptions
 ; Display Credits     ;
 ;---------------------;
 ; Draw Devs' Initials ;
-;                     ;
+;---------------------;
 ; Args: None          ;
 ; Returns: Nothing    ;
 ;;;;;;;;;;;;;;;;;;;;;;;
@@ -1337,8 +1326,9 @@ discredits
 
     rts
 
-
-;;Time waster
+;;;;;;;;;;;;;;;
+; Time waster ;
+;;;;;;;;;;;;;;;
 nothing
     pha
     txa
@@ -1360,15 +1350,12 @@ nothingend
     pla
     rts
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Boss Shoot Check SUBROUTINE ;
 ;-----------------------------;
 ; Determine if boss can shoot ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 boss_shoot_check
-    ;lda
-
     dec TIMERCOUNT1
     lda TIMERCOUNT1
     and $ff
@@ -1384,8 +1371,6 @@ boss_shoot_check
     sbc #255
     bmi bscend
 
-    ;jsr boss_shoot
-
     ; Check if the previous shot ended
     lda BSHOOT
     bne skipshootboss
@@ -1393,7 +1378,7 @@ boss_shoot_check
     ; Shoot sound effect
     ; PLAY SHOOT SOUND EFFECT
     lda #$0f	; vol 15
-	sta $900e	; store in vol mem (36878)
+		sta $900e	; store in vol mem (36878)
     ; Loop and decrement 254 to 128
     lda #$80    ; load 128 into acc
     sta 7165  ; store at mem loc 7165; used for comparison later
@@ -1442,8 +1427,6 @@ skipshootboss
 bscend
     rts
 
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Win/Dead Screen Display                  ;
 ;------------------------------------------;
@@ -1452,7 +1435,6 @@ bscend
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 diswindead
     sei
-
 
 cupprint
     ; Display Cuphead Figure
@@ -1502,7 +1484,7 @@ cupprint
     lda #0
     sta $900c
 
-    ; Display YAY
+    ; Winning Display : print YAY
     lda #16  ;Y
     sta WORDSTART
     sta WORDSTART+2
@@ -1529,9 +1511,32 @@ redspaceloop
     dey
     jmp redspaceloop
 
-    jmp winfinite
+winfinite
+		; Win Sound Effect
+		; music transposed from cuphead: ruse of an ooze
+		jsr wait
+		jsr playf
+		jsr playc
+		jsr playcf
+		jsr playbf
+		jsr playa
+		jsr playf
+		jsr playa
+		jsr playf
+		jsr playa
+		jsr playbf
+		jsr playbf
+		jsr playbf
+		jsr playf
+		jsr playc
+		jsr playcf
+		jsr playbf
+		jsr playa
+		jsr playf
+		jmp winfinite
+    rts
 
-deadword
+deadword	; losing display
     ; Display DEAD
     lda #20
     sta WORDSTART
@@ -1545,11 +1550,11 @@ deadword
 
     ldy #16
     lda #0
-blackspaceloop
+blackspaceloop	; display black stripes
     cpy #0
     beq infinite
 
-    sta MSGSTART+SPACECOLOFF,Y  ; Make red here
+    sta MSGSTART+SPACECOLOFF,Y  ; Make black here
     sta MSGSTART+SPACECOLOFF+176,Y
 
     lda #11
@@ -1562,14 +1567,9 @@ blackspaceloop
     jmp blackspaceloop
 
 infinite
-; Lose Sound effect
-;    lda #135    ; G
-;    sta $900a
-;    jsr wait
-;    jsr wait
-
+		; Lose Sound effect
 		jsr wait
-		jsr playf	; read memory -> if 1, play f, if 2, play c, etc
+		jsr playf
 		jsr playf
 		jsr playc
 		jsr playc
@@ -1584,51 +1584,6 @@ infinite
 
     jmp infinite
 
-winfinite
-		; Win Sound Effect
-		;    lda #240    ; G
-		;    sta $900c
-		jsr wait
-		jsr playf	; read memory -> if 1, play f, if 2, play c, etc
-		jsr playc
-		jsr playcf
-		jsr playbf
-		jsr playa
-		jsr playf
-		;		jsr playf
-		jsr playa
-		;		jsr pause
-		jsr playf
-		;		jsr playf
-		jsr playa
-		;		jsr pause
-		jsr playbf
-		jsr playbf
-		jsr playbf
-		jsr playf	; read memory -> if 1, play f, if 2, play c, etc
-		jsr playc
-		jsr playcf
-		jsr playbf
-		;		jsr playa
-		jsr playa
-		jsr playf
-		jmp winfinite
-
-;selectwait
-;    jsr wait
-;    jsr wait
-;    lda 197                                 ; current key pressed
-
-;    cmp #32                                 ; space
-;    beq backtobegin
-
-;    jmp selectwait
-;backtobegin
-;    jsr main
-
-    rts
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Print Score Subroutine                          ;
 ;-------------------------------------------------;
@@ -1642,8 +1597,8 @@ winfinite
 
 printscore
 		lda SCORE ; max score should be 20
-		ldx CHLIVES
 		; remaining lives bonus
+		ldx CHLIVES
 		cpx #2
 		bmi checkscore
 		asl	; double score if you have two lives left (40)
@@ -1689,19 +1644,18 @@ printgrade
 		sta WORDSTART+2*ROWDIFF+6	; display the grade
 		rts
 
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Display Tombstone Subroutine ;
 ;------------------------------;
 ; Displays the Tombstone Boss  ;
+;------------------------------;
 ; Args: none                   ;
 ; Returns: nothing             ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 distombstone
     pha
-
+		; drawing out tombstone
     lda #49
     sta TOMBSTART
     lda #50
@@ -1860,8 +1814,7 @@ cupshotcol
     lda CHSHOOT
     and #$1f
     cmp #17
-    ;cmp #     ;BOSSPOSI+4
-    ;bmi chkboss  ; if not at end, just move on to if boss shoots
+		; if not at end, just move on to if boss shoots
     bpl pastboss  ; fix random error
     bne crsttime
 pastboss
@@ -1871,9 +1824,6 @@ pastboss
     sta GROUNDOFFSET-ROWDIFF+16
     sta CLOUDOFFSET-ROWDIFF+16
 
-    ;lda #12     ; also erase last bullet if not past boss
-    ;sta GROUNDOFFSET-1,X
-    ;sta CLOUDOFFSET-1,X
     lda #0     ; otherwise, clear shoot bit
     sta CHSHOOT
 
@@ -1887,13 +1837,6 @@ pastboss
     clc
     adc #$40
     sta BOSSSHIELDTIMER
-    ;clc
-
-    ;lda BOSSSHIELDTIMER
-    ;and #$7f
-    ;sta BOSSSHIELDTIMER
-
-    ;adc
 
     jmp crsttime
 declives
@@ -1907,17 +1850,9 @@ declives
     lda #0
     sta $900b
 
-    inc SCORE    ;TODO: inc score when shooting shield?
-
+    inc SCORE 	; increment score
 
 crsttime
-
-    ; Reset timer if not at end
-    ;lda #0
-    ;sta CHST1
-    ;lda #0
-    ;sta CHST2
-
     pla
     tax
     pla
@@ -1938,7 +1873,6 @@ bossshoot
     ; Y position
     lda BSHOOT
     and #$20
-    ;sta WORKAREA
     beq bossxshot        ; no y offset
 
     ;Cloud Shoot
@@ -1961,6 +1895,7 @@ bossshoot
     sta BSHOOT
 
     jmp bossshotcol
+
 erasebshot1
     lda #12     ; Erase previous bullet
     sta CLOUDOFFSET,X  ; GROUNDOFFSET + X -(Y*22)-1
@@ -2018,16 +1953,9 @@ cloudchk
     and #$20
     beq wallchk
 
-    ;clc
-    ;sbc
-    ;lda BSHOOT
-    ;and #$60
-    ;cmp $1
-    ;bne wallchk
-
 bbccollision
     dec CHLIVES		; update cuphead's life when hit
-	jsr printlives
+		jsr printlives
     ; Also reset at this point and stop shooting
 
     lda #0       ; clear shoot bit
@@ -2046,8 +1974,7 @@ wallchk
     ; check if wall reached Check if end of shot; reset bit 0 of BSHOOT
     lda BSHOOT
     and #$1f
-    ;cmp #     ;BOSSPOSI+4
-    ;bmi chkboss  ; if not at end, just move on to if boss shoots
+		; if not at end, just move on to if boss shoots
     bne brsttime
     lda #0       ; otherwise, clear shoot bit
     sta BSHOOT
@@ -2072,8 +1999,8 @@ brsttime
 ;----------------------;
 ; -Cuphead Shooting    ;
 ; -Boss Shooting       ;
-; ...                  ;
 ;;;;;;;;;;;;;;;;;;;;;;;;
+
 timer_isr
     pha
 
@@ -2087,7 +2014,6 @@ timer_isr
     sta $9119
     sta $9118
 
-    ;beq timer_isr
     ; Decrement CHST if not 0
     lda CHST1
     beq isrchshoot
@@ -2097,24 +2023,13 @@ timer_isr
     ;;;;;;;;;;;;;;;;;;
     ; Cuphead Shoot  ;
     ;;;;;;;;;;;;;;;;;;
+
 isrchshoot
     ; Create a function that is run if yes; it will handle the x and y of the bullet
     lda CHSHOOT
     and #$80
 
     beq chkboss   ; not shooting, check if boss is shooting
-
-    ; Check if CHST time is at 0
-    ;lda CHST1
-    ;beq chst2chk  ; if equal, check next timer
-    ;dec CHST1     ; if not equal, decrement timer and just move on
-    ;jmp chkboss
-
-;chst2chk
-    ;lda CHST2
-    ;beq cisshoot  ; if 0, good to shoot
-    ;dec CHST2     ; if not equal, decrement timer and just move on
-    ;jmp chkboss
 
 cisshoot
     jsr chshoot
@@ -2128,35 +2043,27 @@ chkboss
     lda BSHOOT
     and #$80
 
-    beq musicnote   ; not shooting, check if boss is shooting
+    beq bosshield   ; not shooting, check if boss is shooting
 
     ; Check if timers are at 0
     lda BST1
     beq bst2chk
     dec BST1
-    jmp musicnote
+    jmp bosshield
 
 bst2chk
     lda BST2
     beq bisshoot
     dec BST2
-    jmp musicnote
-
+    jmp bosshield
 
 bisshoot
     jsr bossshoot
 
-    ; Optional: fancy shooting like a shotgun spread or falling from the sky or ...
-
-    ;;;;;;;;;;
-    ; Music? ;
-    ;;;;;;;;;;
-musicnote
-    ; Which note (if any) gets played
-
     ;;;;;;;;;;;;;;;
     ; BOSS SHIELD ;
     ;;;;;;;;;;;;;;;
+bosshield
     ; Check if shield is up
     lda BOSSSHIELDTIMER
     and #$80
@@ -2173,19 +2080,6 @@ musicnote
 decshieldtimer
     dec BOSSSHIELDTIMER
 
-    ;;;;;;;;;;;;;;;;;;
-    ; Boss Movement? ;
-    ;;;;;;;;;;;;;;;;;;
-    ; Should the boss change positions?
-
-    ; Collision resolution
-
-    ; set timer
-    ;lda #$ff
-    ;sta $9119
-    ;sta $9118
-
-
 setinterruptimer
     ; set timer 2
     lda #$07     ; 2s
@@ -2196,13 +2090,10 @@ setinterruptimer
 return
     pla
     jmp $eabf
-    ;rti
-    ;jmp  $fead
 
-
-
-
-
+;;;;;;;;;;;;;;;;;;
+; CHARACTER SETS ;
+;;;;;;;;;;;;;;;;;;
 
     org $1c00  ;64 characters
 data
@@ -2354,8 +2245,11 @@ data
     ;12     60
     .byte #$14, #$14, #$14, #$14, #$fe, #$2, #$2, #$fe
 
-    .byte #$0, #$0, #$0, #$0, #$0, #$0, #$0, #$0 ; 61 = empty
+		; char 61 = empty
+    .byte #$0, #$0, #$0, #$0, #$0, #$0, #$0, #$0
 
-	.byte #$0, #$3e, #$41, #$40, #$4f, #$41, #$41, #$3e ; 62 = 0 G
+		; char 62 = G
+		.byte #$0, #$3e, #$41, #$40, #$4f, #$41, #$41, #$3e
 
-	.byte #$0, #$7e, #$41, #$42, #$7c, #$42, #$41, #$7e ; 63 = 1 B
+		; char 63 = B
+		.byte #$0, #$7e, #$41, #$42, #$7c, #$42, #$41, #$7e
